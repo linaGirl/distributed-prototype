@@ -1,0 +1,31 @@
+{
+      "name"                        : "distributed-prototype"
+    , "description"                 : "Prototoype implementation for the distributed framework"
+    , "version"                     : "1.0.0"
+    , "homepage"                    : "https://github.com/eventEmitter/distributed-prototype"
+    , "author"                      : "Michael van der Weg <michael@vanderweg.com> (http://vanderweg.com/)"
+    , "repository": {
+          "url"                     : "https://github.com/eventEmitter/distributed-prototype.git"
+        , "type"                    : "git"
+    }
+    , "engines": {
+        "node"                      : ">=4"
+    }
+    , "bugs": {
+        "url"                       : "https://github.com/eventEmitter/distributed-prototype/issues"
+    }
+    , "dependencies": {
+          "ee-types"                : "2.x"
+        , "ee-log"                  : "1.x"
+        , "ee-soa-rpc-request"      : "0.2.x"
+        , "cachd"                   : "1.x"
+    }
+    , "devDependencies": {
+          "mocha"                   : "2.x"
+    }
+    , "optionalDependencies": {}
+    , "keywords"                    : ["distributed", "prototype"]
+    , "scripts": {
+        "test"                      : "./node_modules/mocha/bin/mocha --reporter spec"
+    }
+}
