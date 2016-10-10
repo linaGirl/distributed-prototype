@@ -452,6 +452,10 @@
                         if (filter.comparator === '!=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('notNull')]();
                         if (filter.comparator === '=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('isNull')]();
 
+                        // check for nullvalues using functions
+                        if (filter.comparator === '=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'function' && filter.children[0].functionName === 'isNull') return this.Related[comparators.get('isNull')]();
+                        if (filter.comparator === '=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'function' && filter.children[0].functionName === 'notNull') return this.Related[comparators.get('notNull')]();
+
                         if (comparators.has(filter.comparator)) return this.Related[comparators.get(filter.comparator)](this.applyRelatedFilter(filter.children[0]));
                         else throw new Error(`Invalid comparator ${filter.comparator}!`);
                     }

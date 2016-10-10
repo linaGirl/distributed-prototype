@@ -22,8 +22,8 @@
                 if (options.remoteResourceId)       this.remoteResourceId = options.remoteResourceId;
                 if (options.filter)                 this.filter = options.filter;
                 if (options.selection)              this.selection = options.selection;
-                if (options.offset)                 this.offset = options.offset;
-                if (options.limit)                  this.limit = options.limit;
+                if (type.number(options.offset))    this.offset = options.offset;
+                if (type.number(options.limit))     this.limit = options.limit;
                 if (options.order)                  this.order = options.order;
                 if (options.relationalSelection)    this.relationalSelection = options.relationalSelection;
                 if (options.data)                   this.data = options.data;

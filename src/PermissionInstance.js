@@ -104,6 +104,54 @@
 
 
 
+        hasApp() {
+            return this.permissions.some(p => p.type === 'app');
+        }
+
+        isApp() {
+            return !this.permissions.some(p => p.type !== 'app');
+        }
+
+
+
+
+
+        hasService() {
+            return this.permissions.some(p => p.type === 'service');
+        }
+
+        isService() {
+            return !this.permissions.some(p => p.type !== 'service');
+        }
+
+
+
+
+
+        hasUser() {
+            return this.permissions.some(p => p.type === 'user');
+        }
+
+        isUser() {
+            return !this.permissions.some(p => p.type !== 'user');
+        }
+
+
+
+
+
+
+
+        isAuthenticated() {
+            return this.permissions.length;
+        }
+
+
+
+
+
+
+
         isActionAllowed(resourceName, actionName) {
             if (allowAll) return true;
             else {

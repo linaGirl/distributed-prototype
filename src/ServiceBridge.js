@@ -273,6 +273,9 @@
 
             const tokens = legacyRequest.accessTokens ? legacyRequest.accessTokens : (legacyRequest.accessToken ? [legacyRequest.accessToken] : []);
 
+            // limit & offset. it's implemented wrong anyway on legacy :/
+            const range = legacyRequest.getRange();
+
             const request = new RelationalRequest({
                   resource              : legacyRequest.collection
                 , action                : action
@@ -285,6 +288,8 @@
                 , relationalSelection   : this.convertIncomingRelationalSelection(legacyRequest)
                 , data                  : legacyRequest.content
                 , tokens                : tokens
+                , limit                 : ((range && range.to !== null) ? (range.to - (range.from || 0) + 1) : null)
+                , offset                : (range ? (range.from || 0) : null)
             });
 
             // options
@@ -380,7 +385,7 @@
 
                 if (type.function(filters.value)) {
                     const result = filters.value();
-                    comparatorFilter.function(result.name, result.parameters);
+                    comparatorFilter.fn(result.name, result.parameters);
                 }
                 else comparatorFilter.value(filters.value);
             }

@@ -20,7 +20,7 @@
         }
 
 
-        error(code, message, err) { //if (err) log(err);
+        error(code, message, err) {// if (err) log(err);
             this.error = err;
             this.code = code;
             this.message = message;
