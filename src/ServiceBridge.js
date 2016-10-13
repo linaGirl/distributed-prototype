@@ -57,15 +57,18 @@
             if (request.serviceName === 'permissions' && request.resource === 'permission') this.getPermissions(request, response);
             else {
                 new this.RPCRequest({
-                      filter: this.convertToLegacyFilter(request.filter)
-                    , select: this.convertToLegaySelection(request)
-                    , languages: request.languages
+                      filter        : this.convertToLegacyFilter(request.filter)
+                    , select        : this.convertToLegaySelection(request)
+                    , languages     : request.languages
+                    , data          : request.data
                 }).send((status, data) => {
                     response.data = data;
 
                     switch (status) {
-                        case 1: response.ok(data);
-                        case 2: response.created(data.id);
+                        case 1: return response.ok(data);
+                        case 2: return response.created(data.id);
+                        case 38: return response.error('legacy_error', `The legacy layer returned an error!`, data.err);
+                        default: return response.error('legacy_error', `The legacy layer returned an unknown status ${status}!`, data.err);
                     }
                 });
             }
@@ -107,7 +110,7 @@
         convertToLegaySelection(request) {
             let selects = request.selection;
             if (request.hasRelationalSelection()) this.convertToLegayRelationalSelection({children:childrenrequest.relationalSelections}, selects, '');
-            return selects.join(', ');
+            return selects ? selects.join(', ') : '';
         }
 
 
@@ -128,51 +131,53 @@
 
 
         convertToLegacyFilter(filter) {
-            switch(filter.type) {
+            if (filter) {
+                switch(filter.type) {
 
-                case 'or':
-                    throw new Error(`Cannot convert or filter to legacy format!`);
+                    case 'or':
+                        throw new Error(`Cannot convert or filter to legacy format!`);
 
 
 
-                case 'and':
-                case 'entity':
-                case 'root':
-                    if (filter.children.length > 1) {
-                        const andChildren = [];
-                        for (const child of filter.children) {
-                            andChildren.push(this.convertToLegacyFilter(child));
+                    case 'and':
+                    case 'entity':
+                    case 'root':
+                        if (filter.children.length > 1) {
+                            const andChildren = [];
+                            for (const child of filter.children) {
+                                andChildren.push(this.convertToLegacyFilter(child));
+                            }
+                            return andChildren.join(', ');
                         }
-                        return andChildren.join(', ');
-                    }
-                    else if (filter.children.length === 1) return this.convertToLegacyFilter(filter.children[0]);
-                    else return null;
+                        else if (filter.children.length === 1) return this.convertToLegacyFilter(filter.children[0]);
+                        else return null;
 
 
 
 
-                case 'property':
-                    if (filter.children.length === 0) return null;
-                    else if (filter.children.length > 1) throw new Error(`Cannot build property filter with more than on child!`);
-                    else return path+this.convertToLegacyFilter(filter.children[0]);
+                    case 'property':
+                        if (filter.children.length === 0) return null;
+                        else if (filter.children.length > 1) throw new Error(`Cannot build property filter with more than on child!`);
+                        else return path+this.convertToLegacyFilter(filter.children[0]);
 
 
 
-                case 'comparator':
-                    if (filter.children.length === 0) return null;
-                    else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
-                    else return filter.comparator;
+                    case 'comparator':
+                        if (filter.children.length === 0) return null;
+                        else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
+                        else return filter.comparator;
 
 
-                case 'function':
-                    if (filter.children.length === 0) return null;
-                    else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
-                    else return `${filter.functionName}(${this.convertToLegacyFilter(filter.children[0])})`;
+                    case 'function':
+                        if (filter.children.length === 0) return null;
+                        else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
+                        else return `${filter.functionName}(${this.convertToLegacyFilter(filter.children[0])})`;
 
 
 
-                case 'value':
-                    return filter.nodeValue+'';
+                    case 'value':
+                        return filter.nodeValue+'';
+                }
             }
         }
 

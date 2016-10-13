@@ -20,7 +20,7 @@
         }
 
 
-        error(code, message, err) {// if (err) log(err);
+        error(code, message, err) { //if (err) log(err);
             this.error = err;
             this.code = code;
             this.message = message;
@@ -80,12 +80,19 @@
 
         send() {
             return this.executeHook('beforeSend', this).then(() => {
-                return this.executeHook('send', this);
-            }).then(() => {
-                return this.executeHook('afterSend', this);
-                Object.freeze(this);
-            }).then(() => {
-                return this.clearHooks();
+                return this.executeHook('send', this).then(() => {
+                    return this.executeHook('afterSend', this);
+                    Object.freeze(this);
+                }).then(() => {
+                    return this.clearHooks();
+                }).catch((err) => {
+                    log(err);
+                });
+            }).catch((err) => {
+                this.error = err;
+                this.message = 'The beforeSend hook returned an error!';
+
+                return this.executeHook('send', this).catch(log);
             });
         }
 

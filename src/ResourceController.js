@@ -55,7 +55,19 @@
 
 
         receiveRequest(request, response, permissions) {
-            return this.dispatchRequest(request, response, permissions);
+            return Promise.resolve().then(() => {
+                const value = this.dispatchRequest(request, response, permissions);
+
+                // check if we got a promise
+                if (value && value.then && value.catch) return value;
+                else return Promise.resolve();
+            }).catch((err) => {
+
+                // handle the crap
+                response.error('controller_error', `The action ${request.action} controller ${his.name} failed!`, err);
+
+                return Promise.resolve();
+            });
         }
 
 

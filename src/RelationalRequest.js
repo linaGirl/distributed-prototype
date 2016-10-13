@@ -55,9 +55,6 @@
             return this.selection.indexOf(name) >= 0;
         }
 
-
-
-
         removeSelection(name) {
             this.selection.some((key, index) => {
                 if (key === name) {
@@ -67,19 +64,38 @@
             });
         }
 
-
-
-
-
-        hasRelationalSelection() {
-            return !!this.relationalSelection;
+        addSelection(...fields) {
+            if (fields.length) {
+                if (!this.selection) this.selection = [];
+                if (type.array(fields[0])) this.selection = this.selection.concat(fields[0]);
+                else this.selection = this.selection.concat(fields);
+            }
         }
 
 
 
 
+
+        hasRelationalSelection(name) {
+            if (name) return this.relationalSelection && this.relationalSelection.has(name);
+            return !!this.relationalSelection;
+        }
+
+
+        removeRelationalSelection(name) {
+            if (this.hasRelationalSelection(name)) return this.relationalSelection.delete(name);
+        }
+
+
+
         getRelationalSelection() {
             return this.relationalSelection;
+        }
+
+
+        addRelationalSelection(selection) {
+            if (!this.relationalSelection) this.relationalSelection = new Map();
+            this.relationalSelection.set(selection.resource, selection);
         }
 
 
