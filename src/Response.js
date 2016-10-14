@@ -8,6 +8,9 @@
 
 
 
+    const debug = process.argv.indexOf('debug-service') >= 0 || process.env.debugService;
+
+
 
 
     module.exports = class Response extends Hook {
@@ -20,7 +23,9 @@
         }
 
 
-        error(code, message, err) { //if (err) log(err);
+        error(code, message, err) {
+            if (debug && err) log(err);
+
             this.error = err;
             this.code = code;
             this.message = message;

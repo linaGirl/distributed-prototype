@@ -79,14 +79,14 @@
 
         loadPermission(token) {
             return new RelationalRequest({
-                  serviceName   : 'permissions'
+                  service       : 'permissions'
                 , resource      : 'permission'
                 , resourceId    : token
                 , selection     : ['*']
                 , action        : 'list'
             }).send(this.target).then((response) => {
                 if (response.status === 'ok') return Promise.resolve(response.data);
-                else return Promise.reject(new Error(`request fialed, response status ${response.status}!`));
+                else return Promise.reject(new Error(`request failed, response status ${response.status}!`));
             }).catch(err => Promise.reject(new Error(`Failed to load permissions: ${err.message}`)));
         }
     }

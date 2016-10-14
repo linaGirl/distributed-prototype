@@ -26,7 +26,7 @@
     statusCodeMap.set('forbidden', 25);
 
 
-
+    const debug = process.argv.indexOf('debug-service') >= 0 || process.env.debugService;
 
 
 
@@ -54,13 +54,36 @@
 
             // so, there we are with a distributed permissions management
             // emulatee it!
-            if (request.serviceName === 'permissions' && request.resource === 'permission') this.getPermissions(request, response);
+            if (request.getService() === 'permissions' && request.getResource() === 'permission') this.getPermissions(request, response);
             else {
+                let url = '/';
+
+                // add service if not explicitly legacy is addressed
+                url += request.getService() === 'legacy' ? '' : request.getService()+':';
+
+                // add the resource
+                url += `/${request.resource}`;
+
+                // add the id if present
+                if (request.hasResourceId()) url += `/${request.getResourceId()}`;
+
+
+                // add remote service if not explicitly legacy is addressed
+                if (request.hasRemoteService()) url += request.getRemoteService() === 'legacy' ? '' : request.getRemoteService()+':';
+
+                // add the resource
+                if (request.hasRemoteResource()) url += `/${request.getRemoteResource()}`;
+
+                // add the id if present
+                if (request.hasRemoteResourceId()) url += `/${request.getRemoteResourceId()}`;
+
+
                 new this.RPCRequest({
                       filter        : this.convertToLegacyFilter(request.filter)
                     , select        : this.convertToLegaySelection(request)
                     , languages     : request.languages
                     , data          : request.data
+                    , url           : url
                 }).send((status, data) => {
                     response.data = data;
 
@@ -202,8 +225,18 @@
 
 
 
-        request(request, response) {
-            this.service.receiveRequest(this.convertIncomingRequest(request), this.convertIncomingResponse(response));
+        request(legacyRequest, legacyResponse) {
+            let request, response;
+
+
+            try {
+                response = this.convertIncomingResponse(legacyResponse)
+                request = this.convertIncomingRequest(legacyRequest);
+            } catch (err) {
+                return response.error('request_translation_error', `Failed to translate legacy to distributed request!`, err);
+            }
+
+            this.service.receiveRequest(request, response);
         }
 
 
@@ -218,6 +251,11 @@
 
 
             response.onSend = () => {
+                if (debug) {
+                    log.info(`response: status -> ${response.status}, message -> ${response.message}`);
+                    if (response.err) log(err);
+                }
+
                 switch(response.status) {
                     case 'created':
                         legacyResponse.setHeader('Location', `/${response.data.resourceName}/${response.data.id}`);
@@ -281,13 +319,21 @@
             // limit & offset. it's implemented wrong anyway on legacy :/
             const range = legacyRequest.getRange();
 
+
+            if (debug) {
+                log.info(`service-bridge: converting legacy to distributed request ...`);
+                log.debug(`legacy request: action -> ${legacyRequest.getActionName()}, resource -> ${legacyRequest.collection}, resourceId -> ${legacyRequest.resourceId}, remoteResource -> ${(legacyRequest.relatedTo ? legacyRequest.relatedTo.model : undefined)}, remoteResourceId -> ${(legacyRequest.relatedTo ? legacyRequest.relatedTo.id : undefined)}`);
+            }
+
+
             const request = new RelationalRequest({
                   resource              : legacyRequest.collection
                 , action                : action
-                , serviceName           : this.service.name
+                , service               : this.service.name
                 , resourceId            : legacyRequest.resourceId
-                , remoteResource        : legacyRequest.relatedTo ? legacyRequest.relatedTo.model : null
-                , remoteResourceId      : legacyRequest.relatedTo ? legacyRequest.relatedTo.id : null
+                , remoteResource        : legacyRequest.relatedTo ? legacyRequest.relatedTo.model : undefined
+                , remoteResourceId      : legacyRequest.relatedTo ? legacyRequest.relatedTo.id : undefined
+                , remoteService         : legacyRequest.relatedTo ? 'legacy' : undefined
                 , filter                : this.convertIncomingFilter(legacyRequest)
                 , selection             : legacyRequest.getFields()
                 , relationalSelection   : this.convertIncomingRelationalSelection(legacyRequest)
@@ -295,11 +341,13 @@
                 , tokens                : tokens
                 , limit                 : ((range && range.to !== null) ? (range.to - (range.from || 0) + 1) : null)
                 , offset                : (range ? (range.from || 0) : null)
+                , options               : legacyRequest.getParameters()
             });
 
-            // options
-            const parameters = legacyRequest.getParameters();
-            if (parameters) Object.keys(parameters).forEach((name, value) => {request.setOption(name, value);});
+
+            if (debug) {
+                log.debug(`distributed request: action -> ${request.getAction()}, service -> ${request.getService()}, resource -> ${request.getResource()}, resourceId -> ${request.getResourceId()}, remoteService -> ${request.getRemoteService()}, remoteResource -> ${(request.getRemoteResource())}, remoteResourceId -> ${(request.getRemoteResourceId())}`);
+            }
 
             return request;
         }

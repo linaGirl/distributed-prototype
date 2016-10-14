@@ -21,7 +21,9 @@
 
 
 
-
+        setService(service) {
+            this.service = service;
+        }
 
 
         enableAction(actionName) {

@@ -40,6 +40,8 @@
             // redirect outgoing requests
             resource.onRequest = (request, response) => this.sendRequest(request, response);
 
+            resource.setService(this.name);
+
             this.resources.set(resourceName, resource);
         }
 
@@ -70,14 +72,11 @@
         sendRequest(request, response) {
 
             // attach sender service
-            request.requestingServiceName = this.name;
-
-            // defaults to the local service
-            if (!request.serviceName) request.serviceName = this.name;
+            request.requestingService = this.name;
 
 
             // internal or external handling?
-            if (request.serviceName === this.name) this.receiveRequest(request, response);
+            if (request.getService() === this.name) this.receiveRequest(request, response);
             else if (!this.hasHooks('request')) response.error('no_listeners', `Cannot send outgoing request, no one is listening on the request hook of the ${this.name} service!`);
             else return this.executeHook('request', request, response);
         }

@@ -183,59 +183,65 @@
             // replace it by the referenced resources id
             if (type.object(data)) {
                 return Promise.all(Object.keys(data).map((propertyName) => {
-                    if (type.object(data[propertyName]) || type.array(data[propertyName])) {
-                        if (this.relations.has(propertyName)) {
-                            const relationDefinition = this.relations.get(propertyName);
+                    try {
+                        if (type.object(data[propertyName]) || type.array(data[propertyName])) {
+                            if (this.relations.has(propertyName)) {
+                                const relationDefinition = this.relations.get(propertyName);
 
-                            if (relationDefinition.type === 'reference' && type.object(data[propertyName])) {
-                                const filter = new FilterBuilder();
-                                const andFilter = filter.and();
+                                if (relationDefinition.type === 'reference' && type.object(data[propertyName])) {
+                                    const filter = new FilterBuilder();
+                                    const andFilter = filter.and();
 
-                                Object.keys(data[propertyName]).forEach((key) => {
-                                    andFilter.property(key).comparator('=').value(data[propertyName][key]);
-                                });
-
-                                return new RelationalRequest({
-                                      resource  : relationDefinition.remote.resource
-                                    , filter    : filter
-                                    , selection : relationDefinition.remote.property
-                                    , action    : 'list'
-                                }).send(this).then((response) => {
-                                    if (response.status === 'ok') {
-                                        delete data[propertyName];
-                                        if (response.data && response.data.length) data[relationDefinition.property] = response.data[0][relationDefinition.remote.property];
-                                        return Promise.resolve();
-                                    } else return Promise.reject(new Error(`expected status ok, got ${response.status} instead!`));
-                                }).catch(err => Promise.reject(new Error(`Failed to load referenced relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
-                            } else if ((relationDefinition.type === 'mapping' || relationDefinition.type === 'belongsTo') && type.array(data[propertyName])) {
-                                const filter = new FilterBuilder();
-                                const orFilter = filter.or();
-
-                                data[propertyName].forEach((relation) => {
-                                    const andFilter = orFilter.and();
-
-                                    Object.keys(relation).forEach((key) => {
-                                        andFilter.property(key).comparator('=').value(relation[key]);
+                                    Object.keys(data[propertyName]).forEach((key) => {
+                                        andFilter.property(key).comparator('=').value(data[propertyName][key]);
                                     });
-                                });
+
+                                    return new RelationalRequest({
+                                          resource  : relationDefinition.remote.resource
+                                        , filter    : filter
+                                        , service   : this.service
+                                        , selection : relationDefinition.remote.property
+                                        , action    : 'list'
+                                    }).send(this).then((response) => {
+                                        if (response.status === 'ok') {
+                                            delete data[propertyName];
+                                            if (response.data && response.data.length) data[relationDefinition.property] = response.data[0][relationDefinition.remote.property];
+                                            return Promise.resolve();
+                                        } else return Promise.reject(new Error(`expected status ok, got ${response.status} instead!`));
+                                    }).catch(err => Promise.reject(new Error(`Failed to load referenced relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
+                                } else if ((relationDefinition.type === 'mapping' || relationDefinition.type === 'belongsTo') && type.array(data[propertyName])) {
+                                    const filter = new FilterBuilder();
+                                    const orFilter = filter.or();
+
+                                    data[propertyName].forEach((relation) => {
+                                        const andFilter = orFilter.and();
+
+                                        Object.keys(relation).forEach((key) => {
+                                            andFilter.property(key).comparator('=').value(relation[key]);
+                                        });
+                                    });
 
 
-                                return new RelationalRequest({
-                                      resource  : relationDefinition.remote.resource
-                                    , filter    : filter
-                                    , selection : relationDefinition.remote.property
-                                    , action    : 'list'
-                                }).send(this).then((response) => {
-                                    if (response.status === 'ok') {
-                                        delete data[propertyName];
-                                        if (response.data && response.data.length) data[relationDefinition.remote.resource] = response.data;
-                                        return Promise.resolve();
-                                    } else return Promise.reject(new Error(`expected status ok, got ${response.status} instead!`));
-                                }).catch(err => Promise.reject(new Error(`Failed to load belongs to relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
-                            } else return Promise.resolve();
-                        }
-                    } else return Promise.resolve();
-                }))
+                                    return new RelationalRequest({
+                                          resource  : relationDefinition.remote.resource
+                                        , filter    : filter
+                                        , service   : this.service
+                                        , selection : relationDefinition.remote.property
+                                        , action    : 'list'
+                                    }).send(this).then((response) => {
+                                        if (response.status === 'ok') {
+                                            delete data[propertyName];
+                                            if (response.data && response.data.length) data[relationDefinition.remote.resource] = response.data;
+                                            return Promise.resolve();
+                                        } else return Promise.reject(new Error(`expected status ok, got ${response.status} instead!`));
+                                    }).catch(err => Promise.reject(new Error(`Failed to load belongs to relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
+                                } else return Promise.resolve();
+                            }
+                        } else return Promise.resolve();
+                    } catch (err) {
+                        return Promise.reject(err);
+                    }
+                }));
             } else return Promise.resolve();
         }
 
@@ -350,6 +356,7 @@
             return new RelationalRequest({
                   resource  : relationDefinition.remote.resource
                 , filter    : filter
+                , service   : this.service
                 , selection : relationalSelection.selection
                 , relationalSelection: relationalSelection.getSubselectionMap()
                 , languages : relationalSelection.languages

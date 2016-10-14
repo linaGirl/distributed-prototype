@@ -42,6 +42,8 @@
         constructor(options, name) {
             super(name);
 
+            if (!options || !options.db) throw new Error(`Please pass an options object containing a db property to the related controller ${name}!`);
+
             this.db = options.db;
             this.Related = options.Related;
 
@@ -107,7 +109,6 @@
             if (!this.db[this.tableName]) response.error('db_error', `the ${this.tableName} table does not exist!`);
             else if (!type.array(request.data)) response.badRequest('invalid_bulk_payload', `cannot bulk create ${this.name} resources, expected an array, got ${type(request.data)}`);
             else {
-
 
                 const transaction = this.db.createTransaction();
 
