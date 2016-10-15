@@ -32,6 +32,7 @@
 
 
 
+
         registerAutoloadTables() {
             return Promise.all(Array.from(this.autoloadTables).map((tableName) => {
                 this.registerResource(tableName, new RelatedResourceController(this.resourceControllerOptions, tableName));
@@ -45,7 +46,7 @@
 
 
 
-        load() {
+        executeLoad() {
             return Promise.resolve().then(() => {
                 if (type.function(this.beforeLoad)) return this.beforeLoad();
                 else return Promise.resolve();
@@ -55,7 +56,7 @@
                 if (type.function(this.afterLoad)) return this.afterLoad();
                 else return Promise.resolve();
             }).then(() => {
-                return super.load();
+                return super.executeLoad();
             });
         }
 
