@@ -138,6 +138,52 @@
 
 
 
+/*
+
+        createOneRelation(request, response) {
+
+
+            // check if the relation is known
+            if (this.relations.has(request.remoteResource)) {
+
+                // get teh remote item
+                new RelationalRequest({
+                      action: 'listOne'
+                    , service: request.remoteService
+                    , resource: request.remoteResource
+                    , resourceId: request.remoteResourceId
+                    , selection: ['*']
+                }).send(this).then((response) => {
+                    if (response.status === 'ok') {
+                        if (response.data) {
+
+                            // now lets check what the nex step is.
+                            // if we got a resourceId it's actually
+                            // linking tow entities, else its creation
+                            // of the local entity and thereaftter a linking
+                            if (!request.hasResourceId()) {
+
+                                // create the resource, check if
+                                // the relation is a reference and
+                                // the foreign key must be set
+                                if (!request.data) request.data = {};
+                                if ()
+                            }
+
+                        } else return Promise.reject(new Error(`Failed to laod remote resource with the id ${request.remoteResourceId}!`));
+                    } else return Promise.reject(new Error(`Remote resource responend with the status ${response.status}: ${response.message}`));
+                }).catch(err => response.error('relation_loading_error', `Failed to load the relation ${request.remoteResource} of the resource ${this.getName()}!`, err));
+            } else response.notFound('unknown_relation', `Cannot resolve the relation between ${this.getName()} and ${request.remoteResource}!`)
+        }
+
+
+
+
+
+*/
+
+
+
 
 
         update(request, response) {
@@ -289,8 +335,8 @@
         resolveRelations(data) {
             return super.resolveRelations(data).then(() => {
                 Object.keys(data).forEach((key) => {
-                    if (type.array(data[key]) && this.relations.has(key)) {
-                        const relationDefinition = this.relations.get(key);
+                    if (type.array(data[key]) && this.hasRelation(this.getServiceName(), key)) {
+                        const relationDefinition = this.getRelation(this.getServiceName(), key);
 
                         if (relationDefinition.type === 'mapping') {
                             data[relationDefinition.via.resource] = data[key].map((item) => {
@@ -349,9 +395,12 @@
 
                     if (type.object(column.referencedModel)) {
                         this.registerReference(column.referencedModel.alias || column.referencedTable, {
-                              localProperty: column.name
-                            , remoteResource: column.referencedModel.alias || column.referencedTable
-                            , remoteResourceProperty: column.referencedColumn
+                              property                  : column.name
+                            , remote: {
+                                  resource              : column.referencedModel.alias || column.referencedTable
+                                , property              : column.referencedColumn
+                                , service               : this.getServiceName()
+                            }
                         });
                     }
 
@@ -359,9 +408,12 @@
                     if (type.array(column.belongsTo)) {
                         column.belongsTo.forEach((belongsToDefinition) => {
                             this.registerBelongsTo(belongsToDefinition.name, {
-                                  localProperty: column.name
-                                , remoteResource: belongsToDefinition.model.alias || belongsToDefinition.name
-                                , remoteResourceProperty: belongsToDefinition.targetColumn
+                                  property              : column.name
+                                , remote: {
+                                      resource          : belongsToDefinition.model.alias || belongsToDefinition.name
+                                    , property          : belongsToDefinition.targetColumn
+                                    , service           : this.getServiceName()
+                                }
                             });
                         });
                     }
@@ -370,13 +422,19 @@
                     if (type.array(column.mapsTo)) {
                         column.mapsTo.forEach((mappingDefinition) => {
                             this.registerMapping((mappingDefinition.aliasName || mappingDefinition.name), {
-                                  localProperty             : column.name
-                                , remoteResource            : mappingDefinition.model.name
-                                , remoteResourceProperty    : mappingDefinition.column.name
-                                , viaResource               : mappingDefinition.via.model.name
-                                , viaResourceLocalProperty  : mappingDefinition.via.fk
-                                , viaResourceRemoteProperty : mappingDefinition.via.otherFk
-                                , viaAlias                  : mappingDefinition.via.model.alias || mappingDefinition.via.model.name
+                                  property              : column.name
+                                , remote: {
+                                      resource          : mappingDefinition.model.name
+                                    , property          : mappingDefinition.column.name
+                                    , service           : this.getServiceName()
+                                }
+                                , via: {
+                                      resource          : mappingDefinition.via.model.name
+                                    , localProperty     : mappingDefinition.via.fk
+                                    , remoteProperty    : mappingDefinition.via.otherFk
+                                    , service           : this.getServiceName()
+                                    , alias             : mappingDefinition.via.model.alias || mappingDefinition.via.model.name
+                                }
                             });
                         });
                     }

@@ -304,15 +304,39 @@
                 log.debug(`legacy request: action -> ${legacyRequest.getActionName()}, resource -> ${legacyRequest.collection}, resourceId -> ${legacyRequest.resourceId}, remoteResource -> ${(legacyRequest.relatedTo ? legacyRequest.relatedTo.model : undefined)}, remoteResourceId -> ${(legacyRequest.relatedTo ? legacyRequest.relatedTo.id : undefined)}`);
             }
 
+            // extract servicename
+            let service = this.serviceName;
+            const index = legacyRequest.collection.indexOf('.');
+            if (index >= 0) {
+                service = legacyRequest.collection.susbtr(0, index);
+                legacyRequest.collection = legacyRequest.collection.substr(index+1);
+            }
+
+
+            // remote servicename
+            let remoteService = this.serviceName;
+            let remoteResource;
+            if (legacyRequest.relatedTo && legacyRequest.relatedTo.model) {
+                remoteResource = legacyRequest.relatedTo.model;
+
+
+                const remoteIndex = remoteResource.indexOf('.');
+                if (remoteIndex >= 0) {
+                    remoteService = remoteResource.susbtr(0, remoteIndex);
+                    remoteResource = remoteResource.substr(remoteIndex+1);
+                }
+            }
+
+
 
             const request = new RelationalRequest({
                   resource              : legacyRequest.collection
                 , action                : action
-                , service               : this.serviceName
+                , service               : service
                 , resourceId            : legacyRequest.resourceId
-                , remoteResource        : legacyRequest.relatedTo ? legacyRequest.relatedTo.model : undefined
+                , remoteResource        : remoteResource
                 , remoteResourceId      : legacyRequest.relatedTo ? legacyRequest.relatedTo.id : undefined
-                , remoteService         : legacyRequest.relatedTo ? 'legacy' : undefined
+                , remoteService         : remoteService
                 , filter                : this.convertIncomingFilter(legacyRequest)
                 , selection             : legacyRequest.getFields()
                 , relationalSelection   : this.convertIncomingRelationalSelection(legacyRequest)
@@ -364,10 +388,24 @@
 
             if (request.hasSubRequests()) {
                 request.getSubRequests().forEach((subRequest) => {
+
+                    // check for containedd service in the collection
+                    let resource = subRequest.getCollection();
+                    let service = this.serviceName;
+                    const index = resource.indexOf('.');
+
+                    if (index >= 0) {
+                        service = resource.susbtr(0, index);
+                        resource = resource.susbtr(index+1);
+                    }
+
+
+
                     const selection = new RelationalSelection({
-                          selection: subRequest.getFields()
-                        , filter: this.convertIncomingObjectTree(subRequest.getFilters(), new FilterBuilder())
-                        , resource: subRequest.getCollection()
+                          selection     : subRequest.getFields()
+                        , filter        : this.convertIncomingObjectTree(subRequest.getFilters(), new FilterBuilder())
+                        , resource      : resource
+                        , service       : service
                     });
 
                     selections.push(selection);

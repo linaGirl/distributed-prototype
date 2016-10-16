@@ -22,7 +22,7 @@
 
 
         setService(service) {
-            this.service = service;
+            this.serviceName = service;
         }
 
 
@@ -31,11 +31,23 @@
         }
 
 
+        getName() {
+            return this.name;
+        }
+
+        getServiceName() {
+            return this.serviceName;
+        }
 
 
 
 
 
+
+
+        /**
+         * load hook
+         */
         load() {
             return Promise.resolve();
         }
@@ -44,6 +56,13 @@
 
 
 
+
+
+
+
+        /**
+         * incoming request routing
+         */
         dispatchRequest(request, response, permissions) {
             response.resourceName = this.name;
             response.actionName = request.action;
@@ -56,6 +75,12 @@
 
 
 
+
+
+
+        /**
+         * incoming reauests
+         */
         receiveRequest(request, response, permissions) {
             return Promise.resolve().then(() => {
                 const value = this.dispatchRequest(request, response, permissions);
@@ -77,7 +102,9 @@
 
 
 
-
+        /**
+         * outgoing requests
+         */
         sendRequest(request, response) {
 
             // attach sender resource
@@ -87,6 +114,11 @@
         }
 
 
+
+
+        /**
+         * hook registration for the service
+         */
         set onRequest(listener) {
             this.storeHook('request', listener);
         }

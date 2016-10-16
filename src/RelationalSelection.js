@@ -12,6 +12,7 @@
                 this.selection = options.selection;
                 this.filter = options.filter;
                 this.resource = options.resource;
+                this.service = options.service;
             }
 
             this.children = [];

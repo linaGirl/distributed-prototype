@@ -35,6 +35,44 @@
             this.enableAction('createOne');
             this.enableAction('deleteOne');
             this.enableAction('updateOne');
+            this.enableAction('registerRelation');
+        }
+
+
+
+
+
+
+
+
+        registerRelation(request, response) {
+            const data = request.data;
+
+            if (type.object(data)) {
+                switch (request.data.type) {
+                    case 'reference':
+                        this.registerReference();
+                        break;
+
+
+                    case 'belongsTo':
+                        this.registerBelongsTo();
+                        break;
+
+
+                    case 'mapping':
+                        this.registerMapping();
+                        break;
+
+                    default:
+                        response.badRequest('invalid_relation_type', `The relation with the unknown type ${data.type} cannot be registered on the resource ${this.getName()}!`);
+                        return;
+                }
+
+                // nice, registration was ok
+
+            }
+            else response.badRequest('missing_request_body', `The relation cannot be registered on the resource ${this.getName()} becuase the request contains no data!`);
         }
 
 
@@ -155,6 +193,7 @@
             }
         }
 
+
         applyListOneFilter(request) {
             const originalFilter = request.filter;
             request.filter = new FilterBuilder();
@@ -185,8 +224,8 @@
                 return Promise.all(Object.keys(data).map((propertyName) => {
                     try {
                         if (type.object(data[propertyName]) || type.array(data[propertyName])) {
-                            if (this.relations.has(propertyName)) {
-                                const relationDefinition = this.relations.get(propertyName);
+                            if (this.hasRelation(this.getServiceName(), propertyName)) {
+                                const relationDefinition = this.getRelation(this.getServiceName(), propertyName);
 
                                 if (relationDefinition.type === 'reference' && type.object(data[propertyName])) {
                                     const filter = new FilterBuilder();
@@ -199,7 +238,7 @@
                                     return new RelationalRequest({
                                           resource  : relationDefinition.remote.resource
                                         , filter    : filter
-                                        , service   : this.service
+                                        , service   : relationDefinition.remote.service
                                         , selection : relationDefinition.remote.property
                                         , action    : 'list'
                                     }).send(this).then((response) => {
@@ -225,7 +264,7 @@
                                     return new RelationalRequest({
                                           resource  : relationDefinition.remote.resource
                                         , filter    : filter
-                                        , service   : this.service
+                                        , service   : relationDefinition.remote.service
                                         , selection : relationDefinition.remote.property
                                         , action    : 'list'
                                     }).send(this).then((response) => {
@@ -275,9 +314,9 @@
 
 
         loadRelationalSelection(records, relationalSelection) {
-            if (!this.relations.has(relationalSelection.resource)) return Promise.reject(new Error(`The relation ${relationalSelection.resource} does not exist!`));
+            if (!this.hasRelation(relationalSelection.service, relationalSelection.resource)) return Promise.reject(new Error(`The relation ${relationalSelection.service}/${relationalSelection.resource} does not exist!`));
             else {
-                const relationDefinition = this.relations.get(relationalSelection.resource);
+                const relationDefinition = this.getRelation(relationalSelection.service, relationalSelection.resource);
 
 
                 if (relationDefinition.type === 'reference' || relationDefinition.type === 'belongsTo') {
@@ -303,13 +342,14 @@
             const selection = new RelationalSelection({
                   resource: relationDefinition.via.resource
                 , selection: [relationDefinition.via.localProperty]
+                , service: relationDefinition.via.service
             });
 
             // add the oroginal selection as child
             selection.children.push(relationalSelection);
 
 
-            return this.loadRelationalRecords(this.relations.get(relationDefinition.via.resource), selection, records).then((results) => {
+            return this.loadRelationalRecords(this.getRelation(relationDefinition.via.service, relationDefinition.via.resource), selection, records).then((results) => {
 
                 // create a mpa for the input rtecords
                 const recordMap = new Map();
@@ -354,13 +394,14 @@
 
             // get the relation
             return new RelationalRequest({
-                  resource  : relationDefinition.remote.resource
-                , filter    : filter
-                , service   : this.service
-                , selection : relationalSelection.selection
-                , relationalSelection: relationalSelection.getSubselectionMap()
-                , languages : relationalSelection.languages
-                , action    : 'list'
+                  resource              : relationDefinition.remote.resource
+                , service               : relationDefinition.remote.service
+                , filter                : filter
+                , service               : relationDefinition.remote.service
+                , selection             : relationalSelection.selection
+                , relationalSelection   : relationalSelection.getSubselectionMap()
+                , languages             : relationalSelection.languages
+                , action                : 'list'
             }).send(this).then((response) => {
                 if (response.status === 'ok') {
                     return Promise.resolve(response.data);
@@ -414,26 +455,32 @@
 
 
 
+        hasRelation(service, name, type) {
+            return this.relations.has(service) &&
+                this.relations.get(service).has(name) &&
+                (!type || this.relations.get(service).get(name).type === type);
+        }
 
 
 
+        getRelation(service, name) {
+            if (this.hasRelation(service, name)) return this.relations.get(service).get(name);
+            else throw new Error(`Cannot get definition for relation ${service}/${name}. The relation does not exist on the service ${this.getName()}!`);
+        }
 
 
 
-        registerReference(name, options) {
-            if (this.relations.has(name)) throw new Error(`Cannot register reference ${name} on the resource ${this.name}, it was already registered before as a ${this.relations.get(name).type}!`);
+        storeRelation(service, name, definition) {
 
-            this.relations.set(name, {
-                  name: name
-                , type: 'reference'
-                , property: options.localProperty
-                , remote: {
-                      resource: options.remoteResource
-                    , property: options.remoteResourceProperty
-                }
-            });
+            // store per service
+            if (!this.relations.has(service)) this.relations.set(service, new Map());
+            const relations = this.relations.get(service);
 
-            this.referencingKeys.set(options.localProperty, name);
+            // dont do double registrations
+            if (relations.has(name)) throw new Error(`Cannot register reference ${name} on the resource ${this.getName()}, it was already registered before as a ${relations.get(name).type}!`);
+
+            // store
+            relations.set(name, definition);
         }
 
 
@@ -442,16 +489,56 @@
 
 
 
-        registerBelongsTo(name, options) {
-            if (this.relations.has(name)) throw new Error(`Cannot register belongs to ${name} on the resource ${this.name}, it was already registered before as a ${this.relations.get(name).type}!`);
 
-            this.relations.set(name, {
-                  name: name
-                , type: 'belongsTo'
-                , property: options.localProperty
+        registerReference(name, definition) {
+            if (!type.string(name) || !name.length) throw new Error(`Cannot register reference. Name is missing!`);
+            if (!type.object(definition)) throw new  Error(`Cannot register reference ${name} on the resource ${this.name}, the definition is missing!`);
+            if (!type.string(definition.property) || !definition.property.length) throw new Error(`Cannot register reference ${name} on the resource ${this.name}: missing or invalid 'property' property on the definition!`);
+            if (!type.object(definition.remote)) throw new Error(`Cannot register reference ${name} on the resource ${this.name}: missing or invalid 'remote' property on the definition!`);
+            if (!type.string(definition.remote.service) || !definition.remote.service.length) throw new Error(`Cannot register reference ${name} on the resource ${this.name}: missing or invalid 'remote.service' property on the definition!`);
+            if (!type.string(definition.remote.resource) || !definition.remote.resource.length) throw new Error(`Cannot register reference ${name} on the resource ${this.name}: missing or invalid 'remote.resource' property on the definition!`);
+            if (!type.string(definition.remote.property) || !definition.remote.property.length) throw new Error(`Cannot register reference ${name} on the resource ${this.name}: missing or invalid 'remote.property' property on the definition!`);
+
+
+            this.storeRelation(definition.remote.service, name, {
+                  name          : name
+                , type          : 'reference'
+                , property      : definition.property
                 , remote: {
-                      resource: options.remoteResource
-                    , property: options.remoteResourceProperty
+                      resource      : definition.remote.resource
+                    , property      : definition.remote.property
+                    , service       : definition.remote.service
+                }
+            });
+
+            this.referencingKeys.set(definition.property, name);
+        }
+
+
+
+
+
+
+
+        registerBelongsTo(name, definition) {
+            if (!type.string(name) || !name.length) throw new Error(`Cannot register belongs to. Name is missing!`);
+            if (!type.object(definition)) throw new  Error(`Cannot register belongs to ${name} on the resource ${this.name}, the definition is missing!`);
+            if (!type.string(definition.property) || !definition.property.length) throw new Error(`Cannot register belongs to ${name} on the resource ${this.name}: missing or invalid 'property' property on the definition!`);
+            if (!type.object(definition.remote)) throw new Error(`Cannot register belongs to ${name} on the resource ${this.name}: missing or invalid 'remote' property on the definition!`);
+            if (!type.string(definition.remote.service) || !definition.remote.service.length) throw new Error(`Cannot register belongs to ${name} on the resource ${this.name}: missing or invalid 'remote.service' property on the definition!`);
+            if (!type.string(definition.remote.resource) || !definition.remote.resource.length) throw new Error(`Cannot register belongs to ${name} on the resource ${this.name}: missing or invalid 'remote.resource' property on the definition!`);
+            if (!type.string(definition.remote.property) || !definition.remote.property.length) throw new Error(`Cannot register belongs to ${name} on the resource ${this.name}: missing or invalid 'remote.property' property on the definition!`);
+
+
+
+            this.storeRelation(definition.remote.service, name, {
+                  name          : name
+                , type          : 'belongsTo'
+                , property      : definition.property
+                , remote: {
+                      resource      : definition.remote.resource
+                    , property      : definition.remote.property
+                    , service       : definition.remote.service
                 }
             });
         }
@@ -462,22 +549,38 @@
 
 
 
-        registerMapping(name, options) {
-            if (this.relations.has(name)) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}, it was already registered before as a ${this.relations.get(name).type}!`);
+        registerMapping(name, definition) {
+            if (!type.string(name) || !name.length) throw new Error(`Cannot register mapping. Name is missing!`);
+            if (!type.object(definition)) throw new  Error(`Cannot register mapping ${name} on the resource ${this.name}, the definition is missing!`);
+            if (!type.string(definition.property) || !definition.property.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'property' property on the definition!`);
+            if (!type.object(definition.remote)) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'remote' property on the definition!`);
+            if (!type.string(definition.remote.service) || !definition.remote.service.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'remote.service' property on the definition!`);
+            if (!type.string(definition.remote.resource) || !definition.remote.resource.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'remote.resource' property on the definition!`);
+            if (!type.string(definition.remote.property) || !definition.remote.property.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'remote.property' property on the definition!`);
+            if (!type.object(definition.via)) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'via' property on the definition!`);
+            if (!type.string(definition.via.service) || !definition.via.service.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'via.service' property on the definition!`);
+            if (!type.string(definition.via.resource) || !definition.via.resource.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'via.resource' property on the definition!`);
+            if (!type.string(definition.via.localProperty) || !definition.via.localProperty.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'via.localProperty' property on the definition!`);
+            if (!type.string(definition.via.remoteProperty) || !definition.via.remoteProperty.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'via.remoteProperty' property on the definition!`);
+            if (!type.string(definition.via.alias) || !definition.via.alias.length) throw new Error(`Cannot register mapping ${name} on the resource ${this.name}: missing or invalid 'via.alias' property on the definition!`);
 
-            this.relations.set(name, {
-                  name: name
-                , type: 'mapping'
-                , property: options.localProperty
+
+
+            this.storeRelation(definition.remote.service, name, {
+                  name          : name
+                , type          : 'mapping'
+                , property      : definition.property
                 , remote: {
-                      resource: options.remoteResource
-                    , property: options.remoteResourceProperty
+                      resource      : definition.remote.resource
+                    , property      : definition.remote.property
+                    , service       : definition.remote.service
                 }
                 , via: {
-                      resource: options.viaResource
-                    , localProperty: options.viaResourceLocalProperty
-                    , remoteProperty: options.viaResourceRemoteProperty
-                    , alias: options.viaAlias
+                      resource      : definition.via.resource
+                    , localProperty : definition.via.localProperty
+                    , remoteProperty: definition.via.remoteProperty
+                    , service       : definition.via.service
+                    , alias         : definition.via.alias
                 }
             });
         }

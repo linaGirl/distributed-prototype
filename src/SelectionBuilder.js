@@ -28,17 +28,24 @@
 
 
 
-        select(resourceName, ...selection) {
+        select(serviceName, resourceName, ...selection) {
             const builder = new SelectionBuilder(this);
             builder.setResource(resourceName);
+            builder.setService(serviceName);
             builder.setSelection(selection.length === 1 && Array.isArray(selection[0]) ? selection[0] : selection);
 
             if (this.children) this.children.set(resourceName, builder.selection);
             else this.selection.children.push(builder.selection);
 
+            builder.service = serviceName;
+
             return builder;
         }
 
+
+        setService(serviceName) {
+            this.selection.service = serviceName;
+        }
 
 
 
