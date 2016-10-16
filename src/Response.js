@@ -82,7 +82,6 @@
 
 
 
-
         send() {
             return this.executeHook('beforeSend', this).then(() => {
                 return this.executeHook('send', this).then(() => {
@@ -100,6 +99,17 @@
                 return this.executeHook('send', this).catch(log);
             });
         }
+
+
+
+        hasData() {
+            return !type.undefined(this.data);
+        }
+
+        hasObjectData() {
+            return type.object(this.data);
+        }
+
 
 
 

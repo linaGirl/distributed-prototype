@@ -69,7 +69,7 @@
 
             if (this.actionRegistry.has(request.action)) {
                 return this[request.action](request, response, permissions);
-            } else return response.invalidAction(`The action ${request.action} is not registered on the ${this.name} resource!`);
+            } else return response.invalidAction(`The action ${request.action} is not registered on the ${this.getName()} resource!`);
         }
 
 
@@ -91,7 +91,7 @@
             }).catch((err) => {
 
                 // handle the crap
-                response.error('controller_error', `The action ${request.action} controller ${his.name} failed!`, err);
+                response.error('controller_error', `The action ${request.action} controller ${this.getName()} failed!`, err);
 
                 return Promise.resolve();
             });

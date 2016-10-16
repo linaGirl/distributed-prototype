@@ -49,31 +49,38 @@
             const data = request.data;
 
             if (type.object(data)) {
-                switch (request.data.type) {
-                    case 'reference':
-                        this.registerReference();
-                        break;
+                try {
+                    switch (request.data.type) {
+                        case 'reference':
+                            this.registerReference(request.data.name, request.data);
+                            break;
 
 
-                    case 'belongsTo':
-                        this.registerBelongsTo();
-                        break;
+                        case 'belongsTo':
+                            this.registerBelongsTo(request.data.name, request.data);
+                            break;
 
 
-                    case 'mapping':
-                        this.registerMapping();
-                        break;
+                        case 'mapping':
+                            this.registerMapping(request.data.name, request.data);
+                            break;
 
-                    default:
-                        response.badRequest('invalid_relation_type', `The relation with the unknown type ${data.type} cannot be registered on the resource ${this.getName()}!`);
-                        return;
+                        default:
+                            response.badRequest('invalid_relation_type', `The relation with the unknown type ${data.type} cannot be registered on the resource ${this.getName()}!`);
+                            return;
+                    }
+                } catch (err) {
+                    response.error('registration_error', `Failed to register the ${request.data.type} relation from ${this.getServiceName()}/${this.getName()} to ${request.data.service}/${request.data.resource}!`, err);
                 }
 
                 // nice, registration was ok
+                response.ok();
 
             }
             else response.badRequest('missing_request_body', `The relation cannot be registered on the resource ${this.getName()} becuase the request contains no data!`);
         }
+
+
 
 
 
@@ -195,16 +202,61 @@
 
 
         applyListOneFilter(request) {
+            // thereis one exception for the filter,
+            // normally the primary is queried, but
+            // if the id is not a number and there is
+            // a field identifier we're going to filter
+            // that
+            const property = (this.definition.hasProperty('identifier') && /[^0-9]/.test(request.resourceId+'')) ? 'identifier' : this.definition.primaryId;
             const originalFilter = request.filter;
+
+
             request.filter = new FilterBuilder();
             request.filter.and()
                     .addChild(originalFilter)
-                    .property(this.definition.primaryId)
+                    .property(property)
                     .comparator('=')
                     .value(request.resourceId);
         }
 
 
+
+
+
+
+
+
+
+        remoteRelationRegistration(service, resource, definition) {
+            const startTime = Date.now();
+            const timeoutTime = this.remoteRegistrationTimeoutTime || 10000;
+
+            const register = () => {
+                if (Date.now() > (startTime+timeoutTime)) return Promise.reject(new Error(`The registration of the remote relation ${definition.name} timed out after ${timeoutTime}!`));
+                else {
+                    return new RelationalRequest({
+                          service: service
+                        , resource: resource
+                        , action: 'registerRelation'
+                        , data: definition
+                    }).send(this).then((response) => {
+                        if (response.status === 'ok') return Promise.resolve();
+                        else if (response.status === 'serviceUnavailable') {
+
+                            // try again
+                            return new Promise((resolve, reject) => {
+                                setTimeout(() => {
+                                    register().then(resolve).catch(reject);
+                                }, 250);
+                            });
+                        }
+                        else return Promise.reject(new Error(`The registration of the remote relation ${definition.name} failedd with the status ${response.status}: ${response.message}`));
+                    });
+                }
+            };
+
+            return register();
+        }
 
 
 

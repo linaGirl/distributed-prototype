@@ -183,6 +183,16 @@
 
 
 
+        hasData() {
+            return !type.undefined(this.data);
+        }
+
+        hasObjectData() {
+            return type.object(this.data);
+        }
+
+
+
 
 
         validate() {
