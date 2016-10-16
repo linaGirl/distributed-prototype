@@ -517,7 +517,7 @@
 
         getRelation(service, name) {
             if (this.hasRelation(service, name)) return this.relations.get(service).get(name);
-            else throw new Error(`Cannot get definition for relation ${service}/${name}. The relation does not exist on the service ${this.getName()}!`);
+            else throw new Error(`Cannot get definition for relation ${service}/${name}. The relation does not exist on the resource ${this.getServiceName()}/${this.getName()}!`);
         }
 
 
