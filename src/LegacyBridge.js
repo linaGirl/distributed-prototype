@@ -25,6 +25,11 @@
 
 
 
+        isService() {
+            return true;
+        }
+
+
 
 
         request(legacyRequest, legacyResponse) {
