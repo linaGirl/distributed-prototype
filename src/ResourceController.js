@@ -89,6 +89,7 @@
                 if (value && value.then && value.catch) return value;
                 else return Promise.resolve();
             }).catch((err) => {
+                log(err);
 
                 // handle the crap
                 response.error('controller_error', `The action ${request.action} controller ${this.getName()} failed!`, err);

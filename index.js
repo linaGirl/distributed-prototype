@@ -14,8 +14,8 @@
         , Response                      : require('./src/Response')
         , SelectionBuilder              : require('./src/SelectionBuilder')
         , Service                       : require('./src/Service')
-        , ServiceBridge                 : require('./src/ServiceBridge')
         , LegacyRequestTranslator       : require('./src/LegacyRequestTranslator')
         , ServiceManager                : require('./src/ServiceManager')
         , TestService                   : require('./src/TestService')
+        , LegacyBridge                  : require('./src/LegacyBridge')
     }

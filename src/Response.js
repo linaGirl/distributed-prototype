@@ -125,4 +125,8 @@
             this.storeHook('afterSend', listener);
         }
     };
+
+
+    // a shared set of methods avialable on the 
+    module.exports.prototype.actions = new Set();
 })();

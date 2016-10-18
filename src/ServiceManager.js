@@ -62,7 +62,16 @@
                     // nice, service is avilable
                     this.services.get(request.getService()).receiveRequest(request, response);
                 }
-            } else response.serviceUnavailable('service_not_registered', `The service ${request.getService()} was not registered and is not available!`);
+            }
+            else if (this.hasHooks('request')) this.executeHook('request', request, response);
+            else response.serviceUnavailable('service_not_registered', `The service ${request.getService()} was not registered and is not available!`);
+        }
+
+
+
+
+        set onRequest(listener) {
+            this.storeHook('request', listener);
         }
     }
 })();

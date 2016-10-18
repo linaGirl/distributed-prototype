@@ -30,9 +30,7 @@
     module.exports = class LegacyRequestTranslator {
 
 
-        constructor(options) {
-
-            this.serviceName = options.serviceName;
+        constructor() {
 
             // needed to convert to legacy
             this.RPCRequest = new RPCRequest(this);
@@ -130,7 +128,7 @@
 
         convertToLegaySelection(request) {
             let selects = request.selection;
-            if (request.hasRelationalSelection()) this.convertToLegayRelationalSelection({children:childrenrequest.relationalSelections}, selects, '');
+            if (request.hasRelationalSelection()) this.convertToLegayRelationalSelection({children: request.relationalSelections}, selects, '');
             return selects ? selects.join(', ') : '';
         }
 
@@ -179,7 +177,7 @@
                     case 'property':
                         if (filter.children.length === 0) return null;
                         else if (filter.children.length > 1) throw new Error(`Cannot build property filter with more than on child!`);
-                        else return path+this.convertToLegacyFilter(filter.children[0]);
+                        else return this.convertToLegacyFilter(filter.children[0]);
 
 
 
@@ -305,16 +303,16 @@
             }
 
             // extract servicename
-            let service = this.serviceName;
+            let service;
             const index = legacyRequest.collection.indexOf('.');
             if (index >= 0) {
-                service = legacyRequest.collection.susbtr(0, index);
+                service = legacyRequest.collection.substr(0, index);
                 legacyRequest.collection = legacyRequest.collection.substr(index+1);
             }
 
 
             // remote servicename
-            let remoteService = this.serviceName;
+            let remoteService;
             let remoteResource;
             if (legacyRequest.relatedTo && legacyRequest.relatedTo.model) {
                 remoteResource = legacyRequest.relatedTo.model;
@@ -322,7 +320,7 @@
 
                 const remoteIndex = remoteResource.indexOf('.');
                 if (remoteIndex >= 0) {
-                    remoteService = remoteResource.susbtr(0, remoteIndex);
+                    remoteService = remoteResource.substr(0, remoteIndex);
                     remoteResource = remoteResource.substr(remoteIndex+1);
                 }
             }
@@ -337,9 +335,9 @@
                 , remoteResource        : remoteResource
                 , remoteResourceId      : legacyRequest.relatedTo ? legacyRequest.relatedTo.id : undefined
                 , remoteService         : remoteService
-                , filter                : this.convertIncomingFilter(legacyRequest)
+                , filter                : this.convertIncomingFilter(legacyRequest, service)
                 , selection             : legacyRequest.getFields()
-                , relationalSelection   : this.convertIncomingRelationalSelection(legacyRequest)
+                , relationalSelection   : this.convertIncomingRelationalSelection(legacyRequest, service)
                 , data                  : legacyRequest.content
                 , tokens                : tokens
                 , limit                 : ((range && range.to !== null) ? (range.to - (range.from || 0) + 1) : null)
@@ -364,8 +362,8 @@
 
 
 
-        convertIncomingRelationalSelection(request) {
-            const selections = this.convertIncomingSelection(request);
+        convertIncomingRelationalSelection(request, service) {
+            const selections = this.convertIncomingSelection(request, service);
 
             // store them, they may be used later
             const relationalSelection = new Map();
@@ -382,7 +380,7 @@
 
 
 
-        convertIncomingSelection(request) {
+        convertIncomingSelection(request, service) {
             const selections = [];
 
 
@@ -391,7 +389,6 @@
 
                     // check for containedd service in the collection
                     let resource = subRequest.getCollection();
-                    let service = this.serviceName;
                     const index = resource.indexOf('.');
 
                     if (index >= 0) {
