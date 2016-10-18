@@ -42,7 +42,7 @@
         constructor(options, name) {
             super(name);
 
-            if (!options || !options.db) throw new Error(`Please pass an options object containing a db property to the related controller ${name}!`);
+            if (!options || !options.db) throw new Error(`Please pass an options object containing a db property to the related controller '${name}'!`);
 
             this.db = options.db;
             this.Related = options.Related;

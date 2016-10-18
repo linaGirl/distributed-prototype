@@ -127,6 +127,12 @@
 
 
 
+        getResourceNames() {
+            return Array.from(this.resources.keys());
+        }
+
+
+
 
 
         executeLoad() {

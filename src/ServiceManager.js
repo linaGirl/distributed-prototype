@@ -47,6 +47,16 @@
 
 
 
+        getResourceNames() {
+            return Array.from(this.services.keys()).map((serviceName) => {
+                return {
+                      resources     : this.services.get(serviceName).getResourceNames()
+                    , serviceName   : serviceName
+                };
+            });
+        }
+
+
 
 
 

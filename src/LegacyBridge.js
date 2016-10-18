@@ -32,6 +32,43 @@
 
 
 
+
+        getControllerMap(map) {
+            for (const serviceName of this.serviceManager.services.keys()) {
+                const service = this.serviceManager.services.get(serviceName);
+
+
+                for (const resourceName of service.resources.keys()) {
+                    const resource = service.resources.get(resourceName);
+
+                    map[`distributed.${serviceName}:${resourceName}`] = Array.from(resource.actionRegistry);
+                }
+            }
+
+            return map;
+        }
+
+
+
+
+
+
+
+        getControllerNames() {
+            const resourceNames = [];
+
+            this.serviceManager.getResourceNames().forEach((definition) => {
+                definition.resources.forEach((resource) => {
+                    resourceNames.push(definition.serviceName+'.'+resource)
+                });
+            });
+
+            return resourceNames;
+        }
+
+
+
+
         request(legacyRequest, legacyResponse) {
             this.converter.fromLegacy(legacyRequest, legacyResponse).then((result) => {
                 /*result.response.onSend = () => {
@@ -94,7 +131,10 @@
 
 
         onLoad(callback) {
-            this.serviceManager.load().then(callback).catch(callback);
+            this.serviceManager.load().then(() => {
+                if (!this.silent) log('Distributed'.blue+' has finished loading the following services: '.white+Array.from(this.serviceManager.services.keys()).map(n => n.green).join(', '.white));
+                callback();
+            }).catch(callback);
         }
 
     }
