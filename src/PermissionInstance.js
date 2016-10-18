@@ -48,7 +48,6 @@
 
                 this.instanceCache.set(cacheId, instance);
             }
-
             return this.instanceCache.get(cacheId);
         }
 
@@ -154,6 +153,7 @@
 
         isActionAllowed(resourceName, actionName) {
             if (allowAll) return true;
+            else if (resourceName === 'permission' && actionName === 'list') return true;
             else {
                 for (const permission of this.permissions) {
                     if (permission.permissions.has(resourceName)) {

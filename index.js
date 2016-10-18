@@ -18,4 +18,5 @@
         , ServiceManager                : require('./src/ServiceManager')
         , TestService                   : require('./src/TestService')
         , LegacyBridge                  : require('./src/LegacyBridge')
+        , TestPermissionsService        : require('./src/TestPermissionsService')
     }

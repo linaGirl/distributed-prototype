@@ -42,11 +42,11 @@
         }
 
         getTokens() {
-            return this.action;
+            return this.tokens;
         }
 
         hasToken(token) {
-            return !!this.action;
+            return Array.isArray(this.tokens);
         }
 
 

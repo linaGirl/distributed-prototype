@@ -250,7 +250,7 @@
                                 }, 250);
                             });
                         }
-                        else return Promise.reject(new Error(`The registration of the remote relation ${definition.name} failedd with the status ${response.status}: ${response.message}`));
+                        else return Promise.reject(new Error(`The registration of the remote relation ${definition.name} failed with the status ${response.status}: ${response.message}`));
                     });
                 }
             };

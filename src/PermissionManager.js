@@ -62,7 +62,7 @@
                         // add to instancecache
                         this.instanceCache.set(instance);
 
-                        // return t user
+                        // return to user
                         return Promise.resolve(instance);
                     });
                 }
@@ -83,8 +83,8 @@
                 , resource      : 'permission'
                 , resourceId    : token
                 , selection     : ['*']
-                , action        : 'list'
-            }).send(this.target).then((response) => {
+                , action        : 'listOne'
+            }).send(this.target).then((response) => { //log(response);
                 if (response.status === 'ok') return Promise.resolve(response.data);
                 else return Promise.reject(new Error(`request failed, response status ${response.status}!`));
             }).catch(err => Promise.reject(new Error(`Failed to load permissions: ${err.message}`)));

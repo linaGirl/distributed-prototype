@@ -8,7 +8,7 @@
 
 
 
-    module.exports = class AuthenticationConditionService extends Service {
+    module.exports = class TestService extends Service {
 
 
         constructor(options) {
