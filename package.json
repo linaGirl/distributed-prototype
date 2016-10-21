@@ -19,6 +19,7 @@
         , "ee-log"                  : "1.x"
         , "ee-soa-rpc-request"      : "0.2.x"
         , "cachd"                   : "1.x"
+        , "inquirer"                : "1.x"
     }
     , "devDependencies": {
           "mocha"                   : "2.x"

@@ -63,12 +63,43 @@
             this.enableAction('update');
             this.enableAction('updateOne');
             this.enableAction('createRelation');
+            this.enableAction('createOrUpdateOneRelation');
         }
 
 
 
 
 
+/*
+
+
+
+        createOrUpdateOneRelation(request, response) {
+
+
+
+            if (this.hasRelation(request.remoteService, request.remoteResource)) {
+                const relation = this.getRelation(request.remoteService, request.remoteResource);
+
+                if (relation.type === 'reference') {
+                    new RelationalRequest({
+                          action        : 'updateOne'
+                        , service       : this.getServiceName()
+                        , resource      : this.getName()
+                        , resourceId    : request.resourceId
+                        , {
+
+                        }
+                    }).send(this).then(() => )
+                }
+            } else response.badRequest('invalid_relation', `The relation '${request.remoteResource}' does not exist on the '${this.getName()}' resource!`);
+        }
+
+
+
+
+
+*/
 
 
 
@@ -135,6 +166,30 @@
 
 
 
+
+/*
+
+
+
+
+        createOrUpdate(request, response) {
+            // ok... check for each item it it exists
+            // call the create or update method on each
+            // of them.
+
+
+            // we'll pass the transaction on the
+            // since it wont leave the service
+            // which is a hack until distributed
+            // transactions are avialable
+            const transaction = this.db.createTransaction();
+
+
+
+        }
+
+
+*/
 
 
 

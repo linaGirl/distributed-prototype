@@ -24,7 +24,7 @@
             this.loaded = false;
             this.loading = false;
             this.loadingQueue = [];
-            this.loadingTimeout = 10000; // 10 seconds
+            this.loadingTimeout = 60000; // 1 min.
 
 
             // the services name
@@ -59,7 +59,10 @@
         }
 
         fininshedLoading(err) {
-            if (err) this.error = err;
+            if (err) {
+                this.error = err;
+                log.error(`Failed to load service ${this.getName()}:`, err);
+            }
 
             // dont flag as loaded when encountering errors
             if (!this.error) this.loaded = true;
@@ -106,7 +109,7 @@
 
 
                 // cancel loading after some time
-                setTimeout(() => {
+                const timeoutTimer = setTimeout(() => {
                     this.fininshedLoading(new Error(`Failed to load service ${this.getName()}, timeout was triggered after ${this.loadingTimeout} milliseconds!`));
                 }, this.loadingTimeout);
 
@@ -114,7 +117,10 @@
                 // start loading after we return
                 process.nextTick(() => {
                     this.executeLoad()
-                        .then(() => this.fininshedLoading())
+                        .then(() => {
+                            clearTimeout(timeoutTimer);
+                            this.fininshedLoading();
+                        })
                         .catch(err => this.fininshedLoading(err));
                 });
 
@@ -136,7 +142,11 @@
 
 
         executeLoad() {
-            return this.loadResourceControllers();
+            return this.permissions.load().then((token) => {
+                this.token = token;
+
+                return this.loadResourceControllers();
+            });
         }
 
 
@@ -161,6 +171,11 @@
 
             // attach sender service
             request.requestingService = this.name;
+
+            if (this.token)  {
+                if (!request.tokens) request.tokens = [];
+                request.tokens.push(this.token)
+            }
 
 
             // internal or external handling?
@@ -187,8 +202,8 @@
 
 
             // check permissions
-            this.permissions.getPermissions(request.tokens).then((permissions) => {
-                if (permissions.isActionAllowed(request.resource, request.action)) {
+            this.permissions.getActionPermissions(request).then((permissions) => {
+                if (permissions.isActionAllowed()) {
                     if (!this.loaded) response.serviceUnavailable('service_not_loaded', `The service was not yet loaded completely. Try again later!`)
                     else {
                         if (this.resources.has(request.resource)) {

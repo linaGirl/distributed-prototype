@@ -22,3 +22,14 @@ todo:
 
 
 
+
+
+[{
+      from: Date
+    , to: Date
+    , stock: 45
+}]
+
+
+
+

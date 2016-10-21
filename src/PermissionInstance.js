@@ -6,30 +6,75 @@
 
 
     const allowAll = process.env.allowAll || process.argv.some(a => a === '--allow-all' ||  a === '--no-permissions');
+    const learningSession = process.env.learnPermissions || process.argv.some(a => a === '--learn-permissions');
+
+
 
 
     module.exports = class PermissionInstance {
 
 
-        constructor(permissions, isChild) {
+        constructor(options) {
+            const permissions = options.permissions;
+
+
+            this.serviceName = options.serviceName;
+            this.resourceName = options.resourceName;
+            this.actionName = options.actionName;
+
+
             if (permissions) {
                 if (!type.array(permissions)) throw new Error(`Expected an permissions array, got ${type(permissions)}!`);
 
                 permissions.forEach((permission) => {
+                    // convert incomin items
+                    if (type.array(permission.capabilities))    permission.capabilities = new Set(permission.capabilities);
+                    if (type.array(permission.roles))           permission.roles        = new Set(permission.roles);
+                    if (type.object(permission.data))           permission.data         = this.mapify(permission.data);
+
+
                     if (!type.set(permission.capabilities)) throw new Error(`Permissions: expected a set on the capability property, got ${type(permission.capabilities)}!`);
                     if (!type.map(permission.data)) throw new Error(`Permissions: expected a map on the data property, got ${type(permission.data)}!`);
                     if (!type.set(permission.roles)) throw new Error(`Permissions: expected a set on the roles property, got ${type(permission.roles)}!`);
-                    if (!type.map(permission.permissions)) throw new Error(`Permissions: expected a map on the permissions property, got ${type(permission.permissions)}!`);
                 });
             }
 
             this.permissions = permissions || [];
-            if (!isChild) this.instanceCache = new Map();
-            this.isChild = !!isChild;
+            if (!options.isChild) this.instanceCache = new Map();
+            this.isChild = !!options.isChild;
+
+            // hidden
+            Object.defineProperty(this, 'manager', {value: options.manager});
+
+            // check it the action is allowed
+            this.actionIsAllowed = this.permissions.some((permissions) => {
+                return permissions.permissions.some((permission) => { 
+                    return permission.action === this.actionName &&
+                        permission.service === this.serviceName &&
+                        permission.resource === this.resourceName &&
+                        permission.allowed;
+                });
+            });
 
             // those objects get shared betweenaction calls, dont ever
             // let them be modified!
             Object.freeze(this);
+        }
+
+
+
+
+
+
+
+        mapify(input) {
+            if (type.object(input)) {
+                const map = new Map();
+
+                Object.keys(input).forEach(k => map.set(k, input[k]));
+
+                return map;
+            } else return input;
         }
 
 
@@ -42,9 +87,16 @@
             const cacheId = `user:${id}`;
 
             if (!this.instanceCache.has(cacheId)) {
-                const instance = new PermissionInstance(this.permissions.filter((p) => {
-                    return p.type === 'user' && (type.undefined(id) || p.id == id);
-                }), true);
+                const instance = new PermissionInstance({
+                    permissions: this.permissions.filter((p) => {
+                        return p.type === 'user' && (type.undefined(id) || p.id == id);
+                    })
+                    , isChild: true
+                    , manager: this.manager
+                    , serviceName: this.serviceName
+                    , resourceName: this.resourceName
+                    , actionName: this.actionName
+                });
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -57,9 +109,16 @@
             const cacheId = `service:${id}`;
 
             if (!this.instanceCache.has(cacheId)) {
-                const instance = new PermissionInstance(this.permissions.filter((p) => {
-                    return p.type === 'service' && (type.undefined(id) || p.id == id);
-                }), true);
+                const instance = new PermissionInstance({
+                    permissions: this.permissions.filter((p) => {
+                        return p.type === 'service' && (type.undefined(id) || p.id == id);
+                    })
+                    , isChild: true
+                    , manager: this.manager
+                    , serviceName: this.serviceName
+                    , resourceName: this.resourceName
+                    , actionName: this.actionName
+                });
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -73,9 +132,16 @@
             const cacheId = `app:${id}`;
 
             if (!this.instanceCache.has(cacheId)) {
-                const instance = new PermissionInstance(this.permissions.filter((p) => {
-                    return p.type === 'app' && (type.undefined(id) || p.id == id);
-                }), true);
+                const instance = new PermissionInstance({
+                    permissions: this.permissions.filter((p) => {
+                        return p.type === 'app' && (type.undefined(id) || p.id == id);
+                    })
+                    , isChild: true
+                    , manager: this.manager
+                    , serviceName: this.serviceName
+                    , resourceName: this.resourceName
+                    , actionName: this.actionName
+                });
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -91,7 +157,7 @@
             if (!this.instanceCache.has(cacheId)) {
                 const instance = new PermissionInstance(this.permissions.filter((p) => {
                     return p.token === token;
-                }), true);
+                }), true, this.manager);
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -151,23 +217,17 @@
 
 
 
-        isActionAllowed(resourceName, actionName) {
-            if (allowAll) return true;
-            else if (resourceName === 'permission' && actionName === 'list') return true;
+        isActionAllowed() {
+            if (this.resourceName === 'authorization' && this.actionName === 'listOne' && this.serviceName === 'permissions') return true;
             else {
-                for (const permission of this.permissions) {
-                    if (permission.permissions.has(resourceName)) {
-                        const resource =  permission.permissions.get(resourceName);
+                if (this.actionIsAllowed) return true;
+                else {
 
-                        if (resource.has(actionName)) {
-                            const action = action.get(actionName);
+                    // check if we're learning
+                    if (learningSession) this.manager.learn(this.serviceName, this.resourceName, this.actionName, Array.from(this.getRoles()));
 
-                            if (action.allowed) return true;
-                        }
-                    }
+                    return allowAll ? true : false;
                 }
-
-                return false;
             }
         }
 

@@ -4,6 +4,8 @@
 
     const Service = require('./Service');
     const log = require('ee-log');
+    const ResourceController = require('./ResourceController');
+
 
 
 
@@ -23,6 +25,30 @@
 
             // super will load the controllers
             super(options);
+        }
+
+
+
+
+
+
+        intercept(resourceName, action, listener) {
+
+            // we're ok ;)
+            this.loaded = true;
+
+
+            const resource = new ResourceController(resourceName);
+            resource[action] = listener;
+            resource.enableAction(action);
+            this.registerResource(resourceName, resource);
+        }
+
+
+
+
+        cancelIntercept(resourceName) {
+            if (this.resources.has(resourceName)) this.resources.delete(resourceName);
         }
 
 

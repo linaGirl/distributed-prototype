@@ -19,6 +19,8 @@
         constructor(options) {
             super(options);
 
+            if (!type.object(options.db)) throw new Error(`Missing the db property on the options object while contructing the RelatedService instance for the ${options.name} Service!`);
+
             // the service can load controllers
             // automatically
             this.autoloadTables = new Set();

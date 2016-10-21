@@ -132,7 +132,14 @@
 
         onLoad(callback) {
             this.serviceManager.load().then(() => {
-                if (!this.silent) log('Distributed'.blue+' has finished loading the following services: '.white+Array.from(this.serviceManager.services.keys()).map(n => n.green).join(', '.white));
+                if (!this.silent) {
+                    for (const serviceName of this.serviceManager.services.keys()) {
+                        log.info('The '+serviceName.green+' service has finished loading its '+(this.serviceManager.services.get(serviceName).resources.size+'').yellow+' controllers ...');
+                    }
+
+                    log.success('Distributed'.blue+' has finished loading ...'.white);
+                }
+
                 callback();
             }).catch(callback);
         }
