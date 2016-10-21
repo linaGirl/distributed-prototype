@@ -30,14 +30,15 @@
 
 
         load() {
-            if (!learningSession) return Promise.resolve();
-            else if (this.service.getName() === 'permissions') return Promise.resolve();
+            if (this.service.getName() === 'permissions') return Promise.resolve();
             else {
                 try {
                     return this.loadFromFS().then((token) => {
                         if (token) {
                             return Promise.resolve(token);
-                        } else {
+                        }
+                        else if (!learningSession) return Promise.resolve();
+                        else {
                             return this.loadFromPermissionsService().then((token) => {
                                 return Promise.resolve(token);
                             });
