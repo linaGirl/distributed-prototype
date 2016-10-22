@@ -48,7 +48,9 @@
                             const set = this.items.get(id).roles;
                             item.roles.forEach(r => set.add(r));
 
-                            this.storeItems();
+                            setTimeout(() => {
+                                this.storeItems();
+                            }, 1000);
                         }
                     }
                 };
@@ -62,13 +64,15 @@
 
 
         learn(service, resource, action, roles) {
-            if (roles.length) {
-                this.queue.push({
-                      service   : service
-                    , resource  : resource
-                    , action    : action
-                    , roles     : roles
-                });
+            if (service !== 'permissions' && resource !== 'authorization' && action !== 'createOne') {
+                if (roles.length) {
+                    this.queue.push({
+                          service   : service
+                        , resource  : resource
+                        , action    : action
+                        , roles     : roles
+                    });
+                }
             }
         }
 
@@ -96,26 +100,32 @@
                             , choices   : Array.from(item.roles).map(r => ({name: ' '+r}))
                         }]).then((result) => {
 
-                            return Promise.resolve(result.roles.map((roleName) => {
-                                return new RelationalRequest({
-                                      action    : 'createOne'
-                                    , service   : 'permissions'
-                                    , resource  : 'authorization'
-                                    , data: {
-                                          service   : item.service
-                                        , resource  : item.resource
-                                        , action    : item.action
-                                        , role      : roleName.trim()
-                                    }
-                                }).send(this.service).then((response) => {
-                                    if (response.status === 'created') return Promise.resolve();
-                                    else return Promise.reject(`Failed to store the permissions: ${response.message}`);
-                                });
-                            })).then(next);
+                            // save one permission after another to avoid conflicts
+                            // due to concurrent inserts
+                            const saveNext = (index) => {
+                                if (result.roles.length > index) {
+                                    return new RelationalRequest({
+                                          action    : 'createOne'
+                                        , service   : 'permissions'
+                                        , resource  : 'authorization'
+                                        , data: {
+                                              service   : item.service
+                                            , resource  : item.resource
+                                            , action    : item.action
+                                            , role      : result.roles[index].trim()
+                                        }
+                                    }).send(this.service).then((response) => {
+                                        if (response.status === 'created') return saveNext(index+1);
+                                        else return Promise.reject(`Failed to store the permissions: ${response.message}`);
+                                    });
+                                } else return Promise.resolve();
+                            };
+
+
+                            return saveNext(0).then(next).catch((err) => {
+                                log.warn(`Failed to create permission ${item.service}/${tem.resource}:${item.action} for the role(s) ${result.roles.join(', ')}`);
+                            });
                         }).catch(log);
-
-
-                        //console.log('----------------------------------------------------------------------------------'.grey);
                     } else {
                         this.busy = false;
                     }

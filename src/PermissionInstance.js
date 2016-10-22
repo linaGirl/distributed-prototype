@@ -1,12 +1,15 @@
 (function() {
     'use strict';
 
-    const log = require('ee-log');
-    const type = require('ee-types');
+    const log               = require('ee-log');
+    const type              = require('ee-types');
+    const RestrictionSet    = require('./RestrictionSet');
 
 
     const allowAll = process.env.allowAll || process.argv.some(a => a === '--allow-all' ||  a === '--no-permissions');
     const learningSession = process.env.learnPermissions || process.argv.some(a => a === '--learn-permissions');
+
+
 
 
 
@@ -27,6 +30,7 @@
                 if (!type.array(permissions)) throw new Error(`Expected an permissions array, got ${type(permissions)}!`);
 
                 permissions.forEach((permission) => {
+
                     // convert incomin items
                     if (type.array(permission.capabilities))    permission.capabilities = new Set(permission.capabilities);
                     if (type.array(permission.roles))           permission.roles        = new Set(permission.roles);
@@ -48,7 +52,7 @@
 
             // check it the action is allowed
             this.actionIsAllowed = this.permissions.some((permissions) => {
-                return permissions.permissions.some((permission) => { 
+                return permissions.permissions.some((permission) => {
                     return permission.action === this.actionName &&
                         permission.service === this.serviceName &&
                         permission.resource === this.resourceName &&
@@ -62,6 +66,22 @@
         }
 
 
+
+
+
+        getRestrictions() {
+            if (!this.restrictions) {
+                const list = [];
+
+                this.permissions.forEach((permission) => {
+                    permission.restrictions.forEach(r => list.push(r));
+                });
+
+                this.restrictions = new RestrictionSet(list);
+            }
+
+            return this.restrictions;
+        }
 
 
 

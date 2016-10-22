@@ -13,6 +13,7 @@
                 this.filter = options.filter;
                 this.resource = options.resource;
                 this.service = options.service;
+                this.tokens = options.tokens;
             }
 
             this.children = [];

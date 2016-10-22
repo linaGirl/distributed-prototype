@@ -134,10 +134,10 @@
             this.serviceManager.load().then(() => {
                 if (!this.silent) {
                     for (const serviceName of this.serviceManager.services.keys()) {
-                        log.info('The '+serviceName.green+' service has finished loading its '+(this.serviceManager.services.get(serviceName).resources.size+'').yellow+' controllers ...');
+                        console.log('The '+serviceName.green+' service has finished loading its '+(this.serviceManager.services.get(serviceName).resources.size+'').yellow+' controllers ...');
                     }
 
-                    log.success('Distributed'.blue+' has finished loading ...'.white);
+                    console.log('Distributed'.blue+' has finished loading ...'.white);
                 }
 
                 callback();

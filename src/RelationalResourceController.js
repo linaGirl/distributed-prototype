@@ -453,6 +453,7 @@
                 , selection             : relationalSelection.selection
                 , relationalSelection   : relationalSelection.getSubselectionMap()
                 , languages             : relationalSelection.languages
+                , tokens                : relationalSelection.tokens
                 , action                : 'list'
             }).send(this).then((response) => {
                 if (response.status === 'ok') {

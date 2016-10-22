@@ -13,33 +13,28 @@
 
 
         constructor(restrictions) {
-            this.globalRestrictions = new Map();
-            this.restrictions = new Map();
+            this.globalRestrictions = [];
+            this.restrictions = [];
 
             restrictions.forEach((restriction) => {
                 const instance = new Restriction(restriction);
 
-                if (instance.isGlobal()) {
-                    
-                }
-                else {
-                    if (!this.restrictions.has(instance.getResourceName())) this.restrictions.set(instance.getResourceName(), []);
-                    this.restrictions.get(instance.getResourceName()).push(instance);
-                }
+                if (instance.isGlobal()) this.globalRestrictions.push(restriction);
+                else this.restrictions.push(instance);
             });
         }
 
 
 
-        getGlobal(action) {
-            return this.global;
+        getGlobal() {
+            return this.globalRestrictions;
         }
 
 
 
 
-        get(resourceName, action) {
-            return this.restrictions.has(resourceName, action) ? this.restrictions.get(resourceName, action) : [];
+        get() {
+            return this.restrictions;
         }
     }
 })();
