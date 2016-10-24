@@ -19,6 +19,37 @@
 
 
 
+
+        replace(newFilter) {
+            const wasReplaced = this.parent.children.some((item, index) => {
+                if (item === this) {
+                    this.parent.children[index] = newFilter;
+                    return true;
+                }
+            });
+
+            if (!wasReplaced) throw new Error(`Failed to replace filter!`);
+            return newFilter;
+        }
+
+
+        remove() {
+            const wasRemoved = this.parent.children.some((item, index) => {
+                if (item === this) {
+                    this.parent.children.splice(index, 1);
+                    return true;
+                }
+            });
+
+            if (!wasRemoved) throw new Error(`Failed to remove filter!`);
+            return this.parent;
+        }
+
+
+
+
+
+
         and() {
             const builder = new FilterBuilder(this, 'and');
             this.addChild(builder);
@@ -70,7 +101,8 @@
 
         setParameters(parameters) {
             if (this.type !== 'function') throw new Error(`Cannot set parameters on node of the type ${this.type}!`);
-            this.parameters = parameters;
+            if (Array.isArray(parameters)) parameters.forEach(value => this.value(value));
+            else this.value(parameters);
             return this;
         }
 
@@ -126,6 +158,14 @@
         addChild(child) {
             if (child) this.children.push(child);
             return this;
+        }
+
+
+
+
+        get root() {
+            if (this.parent) return this.parent.root;
+            else return this;
         }
     };
 })();

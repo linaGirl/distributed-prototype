@@ -104,7 +104,7 @@
         users(id) {
             if (this.isChild) throw new Error(`Cannot get users from permissions, you're already working on a user set!`);
 
-            const cacheId = `user:${id}`;
+            const cacheId = `user:${(id || '[all]')}`;
 
             if (!this.instanceCache.has(cacheId)) {
                 const instance = new PermissionInstance({
@@ -126,7 +126,7 @@
 
         services(id) {
             if (this.isChild) throw new Error(`Cannot get services from permissions, you're already working on a user service!`);
-            const cacheId = `service:${id}`;
+            const cacheId = `service:${(id || '[all]')}`;
 
             if (!this.instanceCache.has(cacheId)) {
                 const instance = new PermissionInstance({
@@ -149,7 +149,7 @@
 
         apps(id) {
             if (this.isChild) throw new Error(`Cannot get apps from permissions, you're already working on a app set!`);
-            const cacheId = `app:${id}`;
+            const cacheId = `app:${(id || '[all]')}`;
 
             if (!this.instanceCache.has(cacheId)) {
                 const instance = new PermissionInstance({
@@ -322,6 +322,17 @@
 
             for (const permission of this.permissions) {
                 if (permission.data.has(valueName)) values.add(permission.data.get(valueName));
+            }
+
+            return values;
+        }
+
+
+        getAllValues() {
+            const values = new Set();
+
+            for (const permission of this.permissions) {
+                if (permission.data.size) values.add(permission.data);
             }
 
             return values;

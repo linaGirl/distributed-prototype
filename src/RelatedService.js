@@ -37,7 +37,7 @@
 
         registerAutoloadTables() {
             return Promise.all(Array.from(this.autoloadTables).map((tableName) => {
-                this.registerResource(tableName, new RelatedResourceController(this.resourceControllerOptions, tableName));
+                this.registerResource(new RelatedResourceController(this.resourceControllerOptions, tableName));
                 return Promise.resolve();
             }));
         }

@@ -367,16 +367,18 @@
 
             // get data
             query.raw().find().then((data) => {
+                return response.executeHook('afterListQuery', data).then(() => {
 
-                // load related dats selectedd by the user
-                this.loadRelationanlSelections(request, data).then(() => {
+                    // load related dats selectedd by the user
+                    this.loadRelationanlSelections(request, data).then(() => {
 
-                    // remove ids for references
-                    this.removeReferenceIds(data, request.requestingResource);
+                        // remove ids for references
+                        this.removeReferenceIds(data, request.requestingResource);
 
-                    // k, there you go!
-                    response.ok(data);
-                }).catch(err => response.error('query_error', `Failed to load relational selection!`, err));
+                        // k, there you go!
+                        response.ok(data);
+                    }).catch(err => response.error('query_error', `Failed to load relational selection!`, err));
+                });
             }).catch(err => response.error('db_error', `Failed to load ${this.name} resource!`, err));
         }
 
@@ -559,16 +561,11 @@
                     if (filter.children.length === 0) return null;
                     else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
                     else {
-                        if (filter.comparator === '!=' && type.array(filter.children[0])) filter.comparator = 'notIn';
-                        if (filter.comparator === '=' && type.array(filter.children[0])) filter.comparator = 'in';
 
                         // check for null values
-                        if (filter.comparator === '!=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('notNull')]();
-                        if (filter.comparator === '=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('isNull')]();
+                        if (filter.comparator === '!=' && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('notNull')]();
+                        if (filter.comparator === '=' && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('isNull')]();
 
-                        // check for nullvalues using functions
-                        if (filter.comparator === '=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'function' && filter.children[0].functionName === 'isNull') return this.Related[comparators.get('isNull')]();
-                        if (filter.comparator === '=' && type.array(filter.children) && filter.children.length === 1 && filter.children[0].type === 'function' && filter.children[0].functionName === 'notNull') return this.Related[comparators.get('notNull')]();
 
                         if (comparators.has(filter.comparator)) return this.Related[comparators.get(filter.comparator)](this.applyRelatedFilter(filter.children[0]));
                         else throw new Error(`Invalid comparator ${filter.comparator}!`);
@@ -580,7 +577,11 @@
                     if (filter.children.length === 0) return null;
                     else if (filter.children.length > 1) throw new Error(`Cannot build function filter with more than on child!`);
                     else {
-                        if (comparators.has(filter.functionName)) return this.Related[comparators.get(filter.functionName)](this.applyRelatedFilter(filter.children[0]));
+                        if (comparators.has(filter.functionName)) {
+                            const fn = this.Related[comparators.get(filter.functionName)];
+                            const parameters = filter.children.map(child => this.applyRelatedFilter(child));
+                            return fn.apply(this.Related, parameters); //this.Related[comparators.get(filter.functionName)](this.applyRelatedFilter(filter.children[0]));
+                        }
                         else throw new Error(`Invalid function ${filter.functionName}!`);
                     }
 

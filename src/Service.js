@@ -61,7 +61,8 @@
         fininshedLoading(err) {
             if (err) {
                 this.error = err;
-                log.error(`Failed to load service ${this.getName()}:`, err);
+                log.error(`Failed to load service ${this.getName()}:`);
+                log(err);
             }
 
             // dont flag as loaded when encountering errors
@@ -77,15 +78,15 @@
 
 
 
-        registerResource(resourceName, resource) {
-            if (this.resources.has(resourceName)) throw new Error(`Cannot register resource ${resourceName}, it was already registred before!`);
+        registerResource(resource) {
+            if (this.resources.has(resource.getName())) throw new Error(`Cannot register resource ${resource.getName()}, it was already registred before!`);
 
             // redirect outgoing requests
             resource.onRequest = (request, response) => this.sendRequest(request, response);
 
             resource.setService(this.name);
 
-            this.resources.set(resourceName, resource);
+            this.resources.set(resource.getName(), resource);
         }
 
 

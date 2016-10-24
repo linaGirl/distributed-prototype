@@ -133,9 +133,11 @@
 
                                 // return
                                 return Promise.resolve(permission);
+                            }).catch((err) => { //log(err);
+                                return Promise.resolve();
                             });
                         }
-                    })).then((permissions) => {
+                    })).then((permissions) => { // log(tokens, permissions);
                         // it's entierly possible that the permissions
                         // result was empty, fitler those items
                         permissions = permissions.filter(k => !!k);
@@ -169,7 +171,7 @@
                     }));
                 }
 
-                if (serviceName !== 'permissions' && resourceName !== 'authorization') {
+                if (learningSession && serviceName !== 'permissions' && resourceName !== 'authorization') {
                     console.log('Request '.grey+'without'.yellow.bold+' token on '.grey+serviceName.green.bold+'/'.grey+resourceName.magenta.bold+':'.grey+actionName.blue.bold+' issued by '.grey+(request.requestingService || '(unknown)').green.bold+'/'.grey+(request.requestingResource || 'unknown').magenta.bold);
                 }
 

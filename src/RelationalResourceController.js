@@ -466,6 +466,45 @@
 
 
 
+        getFilterValue(filter, resourceName, propertyName, filterName, parentResourceName, parentPropertyName) {
+            if (filter.type === 'entity') parentResourceName = filter.entityName;
+            if (filter.type === 'property') parentPropertyName = filter.propertyName;
+
+
+            if ((!parentResourceName || parentResourceName === resourceName) &&
+                parentPropertyName === propertyName &&
+                filter.type === 'function' || filter.type === 'comparator') {
+                return filter.children.map(item => item.nodeValue);
+            } else {
+                const results = filter.children.map(child => this.getFilterValue(child, resourceName, propertyName, filterName, parentResourceName, parentPropertyName)).filter(v => !!v);
+
+                if (results.length) return results[0];
+                else return undefined;
+            }
+        }
+
+
+
+
+
+        updateFilterProperty(request, instruction) {
+            if (request.filter) this.updateFilterPropertyExecutor(request.filter, instruction);
+        }
+
+        updateFilterPropertyExecutor(filter, instruction, parentResource) {
+            if ((parentResource && parentResource.entityName === instruction.from.resource || !parentResource) && filter.type === 'property' && filter.propertyName === instruction.from.property) {
+                // hit, change
+                if (parentResource) parentResource.entityName = instruction.to.resource;
+                filter.propertyName = instruction.to.property;
+            }
+
+            if (filter.type === 'entity') parentResource = filter;
+
+            filter.children.forEach((child) => {
+                this.updateFilterPropertyExecutor(child, instruction, parentResource);
+            });
+        }
+
 
 
 

@@ -13,7 +13,7 @@
     class PermissionController extends ResourceController {
 
         constructor(options) {
-            super('permission');
+            super('authorization');
             this.enableAction('listOne');
         }
 
@@ -78,7 +78,7 @@
 
             controller.capture = this.capture.bind(this);
 
-            this.registerResource('permission', controller);
+            this.registerResource(controller);
 
 
             return Promise.resolve();

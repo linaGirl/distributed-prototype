@@ -23,6 +23,19 @@
     statusCodeMap.set('forbidden', 25);
 
 
+    const methodMap = new Map();
+    methodMap.set('list', 'GET');
+    methodMap.set('listOne', 'GET');
+    methodMap.set('create', 'POST');
+    methodMap.set('createOne', 'POST');
+    methodMap.set('update', 'PATCH');
+    methodMap.set('updateOne', 'PATCH');
+    methodMap.set('createOrUpdate', 'PUT');
+    methodMap.set('createOrUpdateOne', 'PUT');
+    methodMap.set('delete', 'DELETE');
+    methodMap.set('deleteOne', 'DELETE');
+
+
     const debug = process.argv.indexOf('debug-service') >= 0 || process.env.debugService;
 
 
@@ -73,7 +86,7 @@
             url += request.getService() === 'legacy' ? '' : request.getService()+'.';
 
             // add the resource
-            url += `/${request.resource}`;
+            url += `${request.resource}`;
 
             // add the id if present
             if (request.hasResourceId()) url += `/${request.getResourceId()}`;
@@ -95,6 +108,7 @@
                 , languages     : request.languages
                 , data          : request.data
                 , url           : url
+                , method        : methodMap.get(request.action)
             }).convert().then((result) => {
 
                 // get results
@@ -290,6 +304,7 @@
             if (action === 'createOrUpdateRelation' && !type.array(legacyRequest.content)) action = 'createOrUpdateOneRelation';
             if (action === 'updateRelation' && legacyRequest.hasResourceId()) action = 'updateOneRelation';
             if (action === 'deleteRelation' && legacyRequest.hasResourceId()) action = 'deleteOneRelation';
+            if (action === 'createOrUpdate' && legacyRequest.hasResourceId()) action = 'createOrUpdateOne';
 
             const tokens = legacyRequest.accessTokens ? legacyRequest.accessTokens : (legacyRequest.accessToken ? [legacyRequest.accessToken] : []);
 
@@ -451,8 +466,8 @@
                 const comparatorFilter = filterBuilder.comparator(filters.operator);
 
                 if (type.function(filters.value)) {
-                    const result = filters.value();
-                    comparatorFilter.fn(result.name, result.parameters);
+                    const result = filters.value(); //log(result);
+                    comparatorFilter.remove().fn(result.name, result.parameters);
                 }
                 else comparatorFilter.value(filters.value);
             }
@@ -470,7 +485,9 @@
                     const value = filters[key];
 
                     if (type.object(value)) {
+
                         // we are an enitiy
+                        if (key.includes('.')) key = key.substr(key.indexOf('.')+1);
 
                         this.convertIncomingObjectTree(value, filterBuilder.entity(key));
                     }

@@ -133,11 +133,13 @@
         onLoad(callback) {
             this.serviceManager.load().then(() => {
                 if (!this.silent) {
+                    console.log('');
                     for (const serviceName of this.serviceManager.services.keys()) {
-                        console.log('The '+serviceName.green+' service has finished loading its '+(this.serviceManager.services.get(serviceName).resources.size+'').yellow+' controllers ...');
+                        console.log(' ▸'.yellow.bold+' The '+serviceName.blue.bold+' service was loaded successfully '.white+'('.grey+(this.serviceManager.services.get(serviceName).resources.size+'').grey+' controllers)'.grey);
                     }
 
-                    console.log('Distributed'.blue+' has finished loading ...'.white);
+                    console.log('');
+                    console.log(' ▸'.red.bold+' Distributed is ready!'.white);
                 }
 
                 callback();

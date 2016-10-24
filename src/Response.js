@@ -41,6 +41,13 @@
         }
 
 
+        conflict(message) {
+            this.message = message;
+            this.status = 'conflict';
+            this.send();
+        }
+
+
         invalidAction(message) {
             this.message = message;
             this.status = 'invalidAction';
@@ -110,6 +117,11 @@
             return type.object(this.data);
         }
 
+
+
+        set onAfterListQuery(listener) {
+            this.storeHook('afterListQuery', listener);
+        }
 
 
 
