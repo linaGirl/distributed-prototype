@@ -41,7 +41,7 @@
             const resource = new ResourceController(resourceName);
             resource[action] = listener;
             resource.enableAction(action);
-            this.registerResource(resourceName, resource);
+            this.registerResource(resource);
         }
 
 
