@@ -13,6 +13,9 @@
         constructor(serviceManager) {
             super();
 
+            this.name = 'distributed-legacy-service-bridge';
+
+
             this.serviceManager = serviceManager;
 
             // lsiten for requests that

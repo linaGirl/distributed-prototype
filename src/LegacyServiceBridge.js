@@ -32,16 +32,10 @@
         sendRequest(request, response) {
 
 
-            // so, there we are with a distributed permissions management
-            // emulatee it!
-            if (request.getService() === 'permissions' && request.getResource() === 'permission') this.getPermissions(request, response);
-            else {
-
-                // get legacy representation
-                this.converter.toLegacy(request, response).then((result) => {
-                    this.emit('request', result.request, result.response);
-                });
-            }
+            // get legacy representation
+            this.converter.toLegacy(request, response).then((result) => {
+                this.emit('request', result.request, result.response);
+            });
         }
     }
 })();
