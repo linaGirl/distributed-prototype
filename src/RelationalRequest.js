@@ -269,7 +269,8 @@
             if (this.hasRelationalSelection(name)) return this.relationalSelection.delete(name);
         }
 
-        getRelationalSelection() {
+        getRelationalSelection(name) {
+            if (name) return this.relationalSelection.get(name);
             return this.relationalSelection;
         }
 

@@ -28,9 +28,24 @@
 
 
 
+        removeFilter() {
+            this.filter = null;
+            return this;
+        }
+
+
+
+
+        addSubSelection(selection) {
+            this.children.push(selection);
+            return this;
+        }
+
+
 
         addSubSelections(selections) {
             selections.forEach(s => this.children.push(s));
+            return this;
         }
 
 

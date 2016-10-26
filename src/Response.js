@@ -8,7 +8,7 @@
 
 
 
-    const debug = process.argv.indexOf('debug-service') >= 0 || process.env.debugService;
+    const debug = process.argv.includes('--debug-service') || process.env.debugService;
 
 
 
