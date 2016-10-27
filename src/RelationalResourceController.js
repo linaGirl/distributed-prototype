@@ -276,6 +276,7 @@
                 return Promise.all(Object.keys(data).map((propertyName) => {
                     try {
                         if (type.object(data[propertyName]) || type.array(data[propertyName])) {
+
                             if (this.hasRelation(this.getServiceName(), propertyName)) {
                                 const relationDefinition = this.getRelation(this.getServiceName(), propertyName);
 
@@ -312,7 +313,6 @@
                                         });
                                     });
 
-
                                     return new RelationalRequest({
                                           resource  : relationDefinition.remote.resource
                                         , filter    : filter
@@ -346,7 +346,8 @@
 
             // no need to load data if there is no data
             // locally
-            if (!records || (type.array(records) && !records.length)) return Promise.resolve();
+            if (!records || (Array.isArray(records) && !records.length)) return Promise.resolve();
+            if (!Array.isArray(records)) records = [records];
 
             // check if there are any related resources
             // requested
@@ -355,7 +356,7 @@
 
                 return Promise.all(Array.from(selection.keys()).map((relationalSelectionName) => {
                     return this.loadRelationalSelection(records, selection.get(relationalSelectionName));
-                })).then(() => records);
+                })).then(() => Promise.resolve(records));
             } else return Promise.resolve();
         }
 
@@ -515,23 +516,17 @@
                 const map = new Map();
 
                 if (definition.type === 'reference') {
-                    if (type.object(localRecords)) return localRecords[definition.remote.resource] = remoteRecords[0];
-                    else {
-                        remoteRecords.forEach((record) => {
-                            map.set(record[definition.remote.property], record);
-                        });
-                    }
+                    remoteRecords.forEach((record) => {
+                        map.set(record[definition.remote.property], record);
+                    });
                 } else if (definition.type === 'belongsTo') {
-                    if (type.object(localRecords)) return localRecords[definition.remote.resource] = remoteRecords;
-                    else {
-                        remoteRecords.forEach((record) => {
-                            if (!map.has(record[definition.remote.property])) map.set(record[definition.remote.property], []);
-                            map.get(record[definition.remote.property]).push(record);
+                    remoteRecords.forEach((record) => {
+                        if (!map.has(record[definition.remote.property])) map.set(record[definition.remote.property], []);
+                        map.get(record[definition.remote.property]).push(record);
 
-                            // remove our id for prvaciy reasons
-                            delete record[definition.remote.property];
-                        });
-                    }
+                        // remove our id for prvaciy reasons
+                        delete record[definition.remote.property];
+                    });
                 }
 
 

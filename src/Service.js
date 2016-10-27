@@ -6,9 +6,11 @@
     const type = require('ee-types');
     const log = require('ee-log');
     const PermissionManager = require('./PermissionManager');
+    const debug = process.argv.includes('--debug-service') || process.env.debugService;
 
 
 
+    let requestId = 0;
 
 
 
@@ -201,6 +203,18 @@
         dispatchRequest(request, response) {
             response.serviceName = this.name;
 
+
+            if (debug) {
+                const id = ++requestId;
+
+                const timeout = setTimeout(() => {
+                    log.warn(`[${id}] Long running request on ${request.action} ${request.service}/${request.resource}!`);
+                }, 1000);
+
+                response.onAfterSend = () => {
+                    clearTimeout(timeout);
+                }
+            }
 
             // check permissions
             this.permissions.getActionPermissions(request).then((permissions) => {

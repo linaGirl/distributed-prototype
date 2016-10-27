@@ -372,6 +372,7 @@
                     // load related dats selectedd by the user
                     this.loadRelationanlSelections(request, data).then(() => {
 
+
                         // remove ids for references
                         this.removeReferenceIds(data, request.requestingResource);
 
