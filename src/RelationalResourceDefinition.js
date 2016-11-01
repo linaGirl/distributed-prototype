@@ -38,6 +38,10 @@
         }
 
 
+        getProperty(propertyName) {
+            return this.properties.get(propertyName);
+        }
+
 
         get primaryId() {
             if (this.hasPrimaryId()) return this.primaryIds[0];

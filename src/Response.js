@@ -26,7 +26,7 @@
         error(code, message, err) {
             if (debug && err) log(err);
 
-            this.error = err;
+            this.err = err;
             this.code = code;
             this.message = message;
             this.status = 'error';

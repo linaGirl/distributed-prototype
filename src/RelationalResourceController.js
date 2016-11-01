@@ -187,6 +187,11 @@
                 // remove array on the response
                 response.onBeforeSend = () => {
                     if (response.data && response.data.length) response.data = response.data[0];
+                    else {
+                        response.status = 'notFound';
+                        response.data = undefined;
+                        response.message = `Could not load the ${this.getServiceName()}/${this.getName()} with the key ${request.resourceId}!`;
+                    }
                 };
 
                 // ammend the filter, send off to the list method
@@ -210,6 +215,12 @@
             const property = (this.definition.hasProperty('identifier') && /[^0-9]/.test(request.resourceId+'')) ? 'identifier' : this.definition.primaryId;
             const originalFilter = request.filter;
 
+
+            if (this.definition.hasProperty(property) && this.definition.getProperty(property).type === 'number') {
+                try {
+                    request.resourceId = parseInt(request.resourceId, 10);
+                } catch (e) {}
+            }
 
             request.filter = new FilterBuilder();
             request.filter.and()

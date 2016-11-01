@@ -81,6 +81,7 @@
 
         toLegacy(request, response) {
             let url = '/';
+            let range;
 
             // add service if not explicitly legacy is addressed
             url += request.getService() === 'legacy' ? '' : request.getService()+'.';
@@ -102,6 +103,13 @@
             if (request.hasRemoteResourceId()) url += `/${request.getRemoteResourceId()}`;
 
 
+            // offset
+            if (type.number(request.offset)) {
+                if (type.number(request.limit)) range = `${request.offset}-${request.offset+request.limit}`;
+                else range = `${request.offset}-${request.offset+100}`;
+            } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
+
+
             return new this.RPCRequest({
                   filter        : this.convertToLegacyFilter(request.filter)
                 , select        : this.convertToLegaySelection(request)
@@ -109,7 +117,9 @@
                 , data          : request.data
                 , url           : url
                 , method        : methodMap.get(request.action)
-            }).convert().then((result) => {
+                , range         : range
+                , order         : (request.order || []).join(', ')
+            }).convert().then((result) => { //log(result);
 
                 // get results
                 result.response.on('end', (status, data) => {
@@ -141,9 +151,16 @@
 
 
         convertToLegaySelection(request) {
-            let selects = request.selection;
-            if (request.hasRelationalSelection()) this.convertToLegayRelationalSelection({children: request.relationalSelections}, selects, '');
-            return selects ? selects.join(', ') : '';
+            const selects = new Set(request.selection || []);
+            const children = [];
+            const selection = request.getRelationalSelection();
+
+            if (selection) {
+                for (const value of selection.values()) children.push(value);
+                if (request.hasRelationalSelection()) this.convertToLegayRelationalSelection({children: children}, selects, '');
+            }
+
+            return selects.size ? Array.from(selects).join(', ') : '';
         }
 
 
@@ -152,7 +169,7 @@
             if (selection.children) {
                 selection.children.forEach((childSelection) => {
                     if (childSelection.hasFilter()) throw new Error(`Cannot convert subrequests with filters!`);
-                    if (childSelection.hasSelection()) childSelection.selection.forEach(s => selects.push(`${path}.${s}`));
+                    if (childSelection.hasSelection()) childSelection.selection.forEach(s => selects.add(`${path}${(path.length ? '.' : '')}${childSelection.resource}.${s}`));
                     this.convertToLegayRelationalSelection(childSelection, selects, `${path}${(path.length ? '.' : '')}${childSelection.resource}`);
                 });
             }

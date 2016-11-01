@@ -27,6 +27,10 @@
         }
 
 
+        hasSelection() {
+            return this.selection && this.selection.length;
+        }
+
 
         removeFilter() {
             this.filter = null;

@@ -98,23 +98,11 @@
 
 
 
-        // 1. check for .tokens.json in project root
-        // 2. ask user for root pw
-        // 3. check for service token
-        // 4. load groups, let user select
-        // 5. create token, store in .tokens.json
 
 
 
 
-
-        getActionPermissions(request) {
-            const tokens        = request.tokens;
-            const serviceName   = request.service;
-            const resourceName  = request.resource;
-            const actionName    = request.action;
-
-
+        getPermissions(tokens, serviceName, resourceName, actionName, request) {
             if (type.array(tokens) && tokens.length) {
                 const cacheId = this.getCacheKey(tokens, serviceName, resourceName, actionName);
 
@@ -172,11 +160,35 @@
                 }
 
                 if (learningSession && serviceName !== 'permissions' && resourceName !== 'authorization') {
-                    console.log('Request '.grey+'without'.yellow.bold+' token on '.grey+serviceName.green.bold+'/'.grey+resourceName.magenta.bold+':'.grey+actionName.blue.bold+' issued by '.grey+(request.requestingService || '(unknown)').green.bold+'/'.grey+(request.requestingResource || 'unknown').magenta.bold);
+                    let requestingService = '[unknown]';
+                    let requestingResource = '[unknown]';
+
+                    if (request) {
+                        if (request.requestingService) requestingService = request.requestingService;
+                        if (request.requestingResource) requestingResource = request.requestingResource;
+                    }
+
+                    console.log('Request '.grey+'without'.yellow.bold+' token on '.grey+serviceName.green.bold+'/'.grey+resourceName.magenta.bold+':'.grey+actionName.blue.bold+' issued by '.grey+requestingService.green.bold+'/'.grey+requestingResource.magenta.bold);
                 }
 
                 return Promise.resolve(this.nullPermissions.get(nullCacheId));
             }
+        }
+
+
+
+
+
+
+
+        getActionPermissions(request) {
+            const tokens        = request.tokens;
+            const serviceName   = request.service;
+            const resourceName  = request.resource;
+            const actionName    = request.action;
+
+
+            return this.getPermissions(tokens, serviceName, resourceName, actionName, request);
         }
 
 
