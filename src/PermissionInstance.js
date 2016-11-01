@@ -19,7 +19,7 @@
 
         constructor(options) {
             const permissions = options.permissions;
-
+            //log(permissions);
 
             this.serviceName = options.serviceName;
             this.resourceName = options.resourceName;

@@ -30,7 +30,25 @@
 
 
         load() {
-            if (this.service.getName() === 'permissions') return Promise.resolve();
+            if (this.service.getName() === 'permissions') {
+                if (process.argv.includes('--no-permissions')) {
+                    this.loadFromFS().then((token) => {
+                        if (token) {
+                            return Promise.resolve(token);
+                        }
+                        else if (!learningSession) return Promise.resolve();
+                        else {
+                            return this.loadFromPermissionsService().then((token) => {
+                                return Promise.resolve(token);
+                            });
+                        }
+                    }).then((token) => {
+                        this.token = token;
+                    }).catch(log);
+                }
+
+                return Promise.resolve();
+            }
             else {
                 try {
                     return this.loadFromFS().then((token) => {
@@ -92,7 +110,7 @@
                               service       : service
                             , password      : password
                         }
-                    }).send(this.service).then((response) => {
+                    }).send(this.service).then((response) => { //log(response);
                         if (response.status === 'ok') return Promise.resolve(response.data.token);
                         else if (response.status === 'serviceUnavailable') {
 
