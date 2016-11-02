@@ -252,13 +252,13 @@
                         , data: definition
                     }).send(this).then((response) => {
                         if (response.status === 'ok') return Promise.resolve();
-                        else if (response.status === 'serviceUnavailable') {
+                        else if (response.status === 'serviceUnavailable' || response.status === 'authorizationRequired') {
 
                             // try again
                             return new Promise((resolve, reject) => {
                                 setTimeout(() => {
                                     register().then(resolve).catch(reject);
-                                }, 250);
+                                }, 500);
                             });
                         }
                         else return Promise.reject(new Error(`The registration of the remote relation ${definition.name} failed with the status ${response.status}: ${response.message}`));

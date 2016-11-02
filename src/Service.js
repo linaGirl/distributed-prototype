@@ -179,11 +179,6 @@
             if (this.token)  {
                 if (!request.tokens) request.tokens = [];
                 request.tokens.push(this.token);
-            } else if (this.permissions.tokenManager && this.permissions.tokenManager.token) {
-
-                // exception for the permisisons service
-                if (!request.tokens) request.tokens = [];
-                request.tokens.push(this.permissions.tokenManager.token);
             }
 
 

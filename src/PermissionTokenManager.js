@@ -30,39 +30,13 @@
 
 
         load() {
-            if (this.service.getName() === 'permissions') {
-                if (process.argv.includes('--no-permissions')) {
-                    this.loadFromFS().then((token) => {
-                        if (token) {
-                            return Promise.resolve(token);
-                        }
-                        else if (!learningSession) return Promise.resolve();
-                        else {
-                            return this.loadFromPermissionsService().then((token) => {
-                                return Promise.resolve(token);
-                            });
-                        }
-                    }).then((token) => {
-                        this.token = token;
-                    }).catch(log);
-                }
-
-                return Promise.resolve();
-            }
+            if (this.service.getName() === 'permissions') return Promise.resolve();
             else {
-                try {
-                    return this.loadFromFS().then((token) => {
-                        if (token) {
-                            return Promise.resolve(token);
-                        }
-                        else if (!learningSession) return Promise.resolve();
-                        else {
-                            return this.loadFromPermissionsService().then((token) => {
-                                return Promise.resolve(token);
-                            });
-                        }
-                    }).catch(log);
-                } catch (e) {log(e)}
+                return this.loadFromFS().then((token) => {
+                    if (token) return Promise.resolve(token);
+                    else if (!learningSession) return Promise.resolve();
+                    else return this.loadFromPermissionsService();
+                }).catch(log);
             }
         }
 
@@ -251,6 +225,21 @@
                     }
                 });
             })
+        }
+
+
+
+        loadFromFSsync() {
+            const stats = fs.statSync(process.argv[1]);
+
+            this.projectRoot = stats.isDirectory() ? process.argv[1] : path.dirname(process.argv[1]);
+            this.jsonConfigFilePath = path.join(this.projectRoot, '.tokens.json');
+
+            const data = fs.readFileSync(this.jsonConfigFilePath);
+            if (data) {
+                const tokens = JSON.parse(data.toString());
+                return tokens && tokens[this.service.getName()] ? tokens[this.service.getName()] : null;
+            } else return null;
         }
 
 

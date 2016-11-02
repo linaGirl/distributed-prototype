@@ -19,7 +19,6 @@
 
         constructor(options) {
             const permissions = options.permissions;
-            //log(permissions);
 
             this.serviceName = options.serviceName;
             this.resourceName = options.resourceName;
@@ -239,6 +238,9 @@
 
         isActionAllowed() {
             if (this.resourceName === 'authorization' && this.actionName === 'listOne' && this.serviceName === 'permissions') return true;
+            if (this.resourceName === 'serviceInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
+            if (this.resourceName === 'appInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
+            if (this.resourceName === 'userInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
             else {
                 if (this.actionIsAllowed) return true;
                 else {
@@ -250,6 +252,9 @@
                 }
             }
         }
+
+
+
 
 
 
@@ -336,6 +341,46 @@
             }
 
             return values;
+        }
+
+        getUniqueValues() {
+            const values = new Map();
+
+            for (const permission of this.permissions) {
+                if (permission.data.size) {
+                    for (const key of permission.data.keys()) {
+                        values.set(key, permission.data.get(key));
+                    }
+                }
+            }
+
+            return values;
+        }
+
+
+
+
+
+
+        hasRowRestrictions() {
+            return this.permissions.some(p => p.restrictions && p.restrictions.length);
+        }
+
+
+
+
+        getRowRestrictions() {
+            const restrictions = [];
+
+            for (const permission of this.permissions) {
+                if (permission.restrictions) {
+                    for (const restriction of permission.restrictions) {
+                        restrictions.push(restriction);
+                    }
+                }
+            }
+
+            return restrictions;
         }
     }
 })();
