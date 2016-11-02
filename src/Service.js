@@ -179,7 +179,7 @@
             if (this.token)  {
                 if (!request.tokens) request.tokens = [];
                 request.tokens.push(this.token);
-            }
+            }// else log.warn('not adding token', this.getName());
 
 
             // internal or external handling?

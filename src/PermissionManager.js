@@ -34,7 +34,7 @@
 
             // cache the combination of tokens
             this.instanceCache = new Cachd({
-                  ttl: 30000 // 30 seconds
+                  ttl: 300000 // 30 seconds
                 , maxLength: 10000
                 , removalStrategy: 'leastUsed'
             });

@@ -1,7 +1,7 @@
 (function() {
     'use strict';
 
-
+    const log = require('ee-log');
 
 
     module.exports = class RelationalSelection {
@@ -9,7 +9,7 @@
 
         constructor(options) {
             if (options) {
-                this.selection = options.selection;
+                if (options.selection) this.addSelection(options.selection);
                 this.filter = options.filter;
                 this.resource = options.resource;
                 this.service = options.service;
@@ -30,6 +30,15 @@
         hasSelection() {
             return this.selection && this.selection.length;
         }
+
+
+
+        addSelection(item) {
+            if (!this.selection) this.selection = [];
+            if (Array.isArray(item)) item.forEach(i => this.selection.push(i));
+            else this.selection.push(item);
+        }
+
 
 
         removeFilter() {

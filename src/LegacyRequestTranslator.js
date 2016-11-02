@@ -110,7 +110,7 @@
                 else range = `${request.offset}-${request.offset+100}`;
             } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
 
-
+//log(request);
             return new this.RPCRequest({
                   filter        : this.convertToLegacyFilter(request.filter)
                 , select        : this.convertToLegaySelection(request)
@@ -120,7 +120,8 @@
                 , method        : methodMap.get(request.action)
                 , range         : range
                 , order         : (request.order || []).join(', ')
-            }).convert().then((result) => { //log(result);
+                , accessTokens  : request.tokens
+            }).convert().then((result) => { //log(result.request);
 
                 // get results
                 result.response.on('end', (status, data) => {
