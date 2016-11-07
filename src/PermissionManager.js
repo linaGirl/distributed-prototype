@@ -43,6 +43,11 @@
             this.nullPermissions = new Map();
 
 
+
+            // queue for permissions that are currentl ybeeing loaded
+            this.loaderQueue = new Map();
+
+
             if (learningSession) {
                 this.learner = new PermissionLearner(this.service, this);
             }
@@ -112,16 +117,50 @@
                         const tokenCacheId = this.getCacheKey(token, serviceName, resourceName, actionName);
 
                         if (this.cache.has(tokenCacheId)) return Promise.resolve(this.cache.get(tokenCacheId));
+                        else if (this.loaderQueue.has(tokenCacheId)) {
+
+                            // the permissions are already beeing loaded
+                            // wait for the other call to return
+                            return new Promise((resolve, reject) => {
+                                this.loaderQueue.get(tokenCacheId).push({
+                                      resolve   : resolve
+                                    , reject    : reject
+                                });
+                            });
+                        }
                         else {
+                            // mark as loading
+                            this.loaderQueue.set(tokenCacheId, []);
+
+                            // get from service
                             return this.loadPermission(token, serviceName, resourceName, actionName).then((data) => {
                                 const permission = this.preparePermission(data, serviceName, resourceName, actionName);
 
                                 // add to tokencache
                                 if (!learningSession) this.cache.set(tokenCacheId, permission);
 
+                                // return all other calls in
+                                // the correct order
+                                process.nextTick(() => {
+                                    this.loaderQueue.get(tokenCacheId).forEach(promise => promise.resolve(permission));
+
+                                    // remove, we're done
+                                    this.loaderQueue.delete(tokenCacheId);
+                                });
+
                                 // return
                                 return Promise.resolve(permission);
                             }).catch((err) => { //log(err);
+
+                                // return to all waiting parties
+                                process.nextTick(() => {
+                                    this.loaderQueue.get(tokenCacheId).forEach(promise => promise.resolve());
+
+                                    // remove, we're done
+                                    this.loaderQueue.delete(tokenCacheId);
+                                });
+
+
                                 return Promise.resolve();
                             });
                         }
