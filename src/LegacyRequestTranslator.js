@@ -314,6 +314,7 @@
             if (action === 'createOrUpdate' && legacyRequest.hasRelatedTo()) action = 'createOrUpdateRelation';
             if (action === 'update' && legacyRequest.hasRelatedTo()) action = 'updateRelation';
             if (action === 'delete' && legacyRequest.hasRelatedTo()) action = 'deleteRelation';
+            if (action === 'list' && legacyRequest.hasRelatedTo()) action = 'listRelation';
 
             // bulk operations
             if (action === 'delete' && legacyRequest.hasResourceId()) action = 'deleteOne';

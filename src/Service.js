@@ -86,7 +86,9 @@
             // redirect outgoing requests
             resource.onRequest = (request, response) => this.sendRequest(request, response);
 
+            // pass the resource some needed information
             resource.setService(this.name);
+            resource.setPermissionManager(this.permissions);
 
             this.resources.set(resource.getName(), resource);
         }

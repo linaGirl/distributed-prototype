@@ -26,6 +26,11 @@
         }
 
 
+        setPermissionManager(permissions) {
+            this.permissions = permissions;
+        }
+
+
         enableAction(actionName) {
             this.actionRegistry.add(actionName);
         }

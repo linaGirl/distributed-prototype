@@ -236,19 +236,34 @@
 
 
 
-        isActionAllowed() {
+        isActionAllowed(actionName) {
             if (this.resourceName === 'authorization' && this.actionName === 'listOne' && this.serviceName === 'permissions') return true;
             if (this.resourceName === 'serviceInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
             if (this.resourceName === 'appInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
             if (this.resourceName === 'userInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
             else {
-                if (this.actionIsAllowed) return true;
-                else {
+                if (actionName) {
 
-                    // check if we're learning
-                    if (learningSession) this.manager.learn(this.serviceName, this.resourceName, this.actionName, Array.from(this.getRoles()));
+                    // action specific permissions
+                    return this.permissions.some((permissions) => {
+                        return permissions.permissions.some((permission) => {
+                            return permission.action === actionName &&
+                                permission.service === this.serviceName &&
+                                permission.resource === this.resourceName &&
+                                permission.allowed;
+                        });
+                    });
+                } else {
 
-                    return allowAll ? true : false;
+                    // default action this instance was loaded for
+                    if (this.actionIsAllowed) return true;
+                    else {
+
+                        // check if we're learning
+                        if (learningSession) this.manager.learn(this.serviceName, this.resourceName, this.actionName, Array.from(this.getRoles()));
+
+                        return allowAll ? true : false;
+                    }
                 }
             }
         }
@@ -271,13 +286,16 @@
         }
 
         getRoles() {
-            const roles = new Set();
+            if (!this._roles) {
+                this._roles = new Set();
 
-            for (const permission of this.permissions) {
-                for (const role of permission.roles) roles.add(role);
+                for (const permission of this.permissions) {
+                    for (const role of permission.roles) roles.add(role);
+                }
             }
 
-            return roles;
+
+            return this._roles;
         }
 
 

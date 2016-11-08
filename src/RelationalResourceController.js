@@ -36,6 +36,7 @@
             this.enableAction('deleteOne');
             this.enableAction('updateOne');
             this.enableAction('registerRelation');
+            this.enableAction('describe');
         }
 
 
@@ -269,6 +270,40 @@
             return register();
         }
 
+
+
+
+
+
+
+
+
+        describe(request, response, permissions) {
+            const data = {};
+
+            // basics
+            data.service        = this.getServiceName();
+            data.resource       = this.getName();
+            data.actions        = Array.from(this.actionRegistry);
+            data.primaryKeys    = this.definition.primaryIds || [];
+            data.permissions    = {};
+
+
+            // permissions for all of the resource
+            this.permissions.getPermissions(request.tokens, this.getServiceName(), this.getName(), null, request).then((permissions) => {
+
+                // set permissions on local entity
+                for (const action of this.actionRegistry) {
+                    data.permissions[action] = permissions.isActionAllowed(action);
+                }
+
+
+                // add has one relation definitions
+                for (const relation of this.relations.values()) {
+                    log (relation);
+                }
+            }).catch(err => response.error('permissions_error', `Failed to load permissions!`, err));
+        }
 
 
 

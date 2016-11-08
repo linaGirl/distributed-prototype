@@ -154,20 +154,26 @@
 
                                 // return to all waiting parties
                                 process.nextTick(() => {
-                                    this.loaderQueue.get(tokenCacheId).forEach(promise => promise.resolve());
+                                    this.loaderQueue.get(tokenCacheId).forEach(promise => promise.resolve(err));
 
                                     // remove, we're done
                                     this.loaderQueue.delete(tokenCacheId);
                                 });
 
 
-                                return Promise.resolve();
+                                return Promise.resolve(err);
                             });
                         }
                     })).then((permissions) => { // log(tokens, permissions);
+
+                        // some results may have resulted in errors
+                        // check if that's the case
+                        const hasErrors = permissions.some(k => k instanceof Error);
+
+
                         // it's entierly possible that the permissions
                         // result was empty, fitler those items
-                        permissions = permissions.filter(k => !!k);
+                        permissions = permissions.filter(k => !!k && !(k instanceof Error));
 
 
                         const instance = new PermissionInstance({
@@ -178,8 +184,9 @@
                             , manager           : this
                         });
 
-                        // add to instancecache
-                        if (!learningSession) this.instanceCache.set(cacheId, instance);
+                        // add to instancecache, but only if there
+                        // were no errors
+                        if (!learningSession && !hasErrors) this.instanceCache.set(cacheId, instance);
 
                         // return to user
                         return Promise.resolve(instance);
