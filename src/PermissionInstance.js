@@ -59,6 +59,15 @@
                 });
             });
 
+
+            // cache roles
+            this._roles = new Set();
+
+            for (const permission of this.permissions) {
+                for (const role of permission.roles) this._roles.add(role);
+            }
+
+
             // those objects get shared betweenaction calls, dont ever
             // let them be modified!
             Object.freeze(this);
@@ -283,15 +292,6 @@
         }
 
         getRoles() {
-            if (!this._roles) {
-                this._roles = new Set();
-
-                for (const permission of this.permissions) {
-                    for (const role of permission.roles) roles.add(role);
-                }
-            }
-
-
             return this._roles;
         }
 
