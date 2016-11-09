@@ -287,6 +287,19 @@
             data.actions        = Array.from(this.actionRegistry);
             data.primaryKeys    = this.definition.primaryIds || [];
             data.permissions    = {};
+            data.properties     = [];
+            data.relations      = [];
+
+
+            // local properties
+            for (const property of this.definition.properties.values()) {
+                data.properties.push({
+                      name      : property.name
+                    , type      : property.type
+                    , nullable  : property.nullable
+                    , readonly  : null
+                });
+            }
 
 
             // permissions for all of the resource
@@ -298,10 +311,128 @@
                 }
 
 
+
                 // add has one relation definitions
-                for (const relation of this.relations.values()) {
-                    log (relation);
-                }
+                if (request.hasOption('withoutRelations')) return Promise.resolve();
+                else return Promise.all(Array.from(this.relations.values()).map((service) => {
+                    return Promise.all(Array.from(service.values()).map((relation) => {
+                        const definition = {
+                              type: relation.type === 'mapping' ? 'hasManyAndBelongsToMany' : (relation.type === 'belongsTo' ? 'hasMany' : 'hasOne')
+                            , name: relation.name
+                            , property: relation.property
+                        };
+
+                        data.relations.push(definition);
+
+
+                        if (relation.type === 'reference') {
+                            definition.remote = {
+                                  service   : relation.remote.service
+                                , resource  : relation.remote.resource
+                                , property  : relation.remote.property
+                            };
+
+                            definition.actions = null;
+                            definition.permissions = null;
+
+
+                            return new RelationalRequest({
+                                  service   : definition.remote.service
+                                , resource  : definition.remote.resource
+                                , action    : 'describe'
+                                , tokens    : request.tokens
+                                , options   : {withoutRelations: true}
+                            }).send(this).then((remoteResponse) => {
+                                if (remoteResponse.status === 'ok' && remoteResponse.hasObjectData()) {
+                                    if (remoteResponse.data.permissions)  definition.permissions = remoteResponse.data.permissions;
+                                    if (remoteResponse.data.actions)      definition.actions = remoteResponse.data.actions;
+
+                                    definition.permissions.createLink = true;
+                                    definition.permissions.updateLink = true;
+                                    definition.permissions.deleteLink = true;
+                                }
+
+                                return Promise.resolve();
+                            });
+                        } else if (relation.type === 'belongsTo') {
+                            definition.remote = {
+                                  service   : relation.remote.service
+                                , resource  : relation.remote.resource
+                                , property  : relation.remote.property
+                            };
+
+
+                            return new RelationalRequest({
+                                  service   : definition.remote.service
+                                , resource  : definition.remote.resource
+                                , action    : 'describe'
+                                , tokens    : request.tokens
+                                , options   : {withoutRelations: true}
+                            }).send(this).then((remoteResponse) => {
+                                if (remoteResponse.status === 'ok' && remoteResponse.hasObjectData()) {
+                                    if (remoteResponse.data.permissions)  definition.permissions = remoteResponse.data.permissions;
+                                    if (remoteResponse.data.actions)      definition.actions = remoteResponse.data.actions;
+
+                                    definition.permissions.createLink = definition.permissions.create || definition.permissions.createOne || false;
+                                    definition.permissions.updateLink = definition.permissions.update || definition.permissions.updateOne || false;
+                                    definition.permissions.deleteLink = definition.permissions.delete || definition.permissions.deleteOne || false;
+                                }
+
+                                return Promise.resolve();
+                            });
+                        }
+                        else if (relation.type === 'mapping') {
+                            definition.remote = {
+                                  service   : relation.remote.service
+                                , resource  : relation.remote.resource
+                                , property  : relation.remote.property
+                            };
+
+                            definition.via = {
+                                  service           : relation.via.service
+                                , resource          : relation.via.resource
+                                , localProperty     : relation.via.localProperty
+                                , remoteProperty    : relation.via.remoteProperty
+                            };
+
+                            return new RelationalRequest({
+                                  service   : definition.remote.service
+                                , resource  : definition.remote.resource
+                                , action    : 'describe'
+                                , tokens    : request.tokens
+                                , options   : {withoutRelations: true}
+                            }).send(this).then((remoteResponse) => {
+                                if (remoteResponse.status === 'ok' && remoteResponse.hasObjectData()) {
+                                    if (remoteResponse.data.permissions)  definition.permissions = remoteResponse.data.permissions;
+                                    if (remoteResponse.data.actions)      definition.actions = remoteResponse.data.actions;
+
+
+                                    return new RelationalRequest({
+                                          service   : definition.via.service
+                                        , resource  : definition.via.resource
+                                        , action    : 'describe'
+                                        , tokens    : request.tokens
+                                        , options   : {withoutRelations: true}
+                                    }).send(this).then((viaResponse) => {
+                                        if (viaResponse.status === 'ok' && viaResponse.hasObjectData() && viaResponse.data.permissions && viaResponse.data.actions) {
+                                            const has = p => !!viaResponse.data.permissions[p];
+                                            const can = a => viaResponse.data.actions.includes(a);
+
+                                            definition.permissions.createLink = (can('create') && has('create')) || (can('createOne') && has('createOne'));
+                                            definition.permissions.updateLink = (can('update') && has('update')) || (can('updateOne') && has('updateOne'));
+                                            definition.permissions.deleteLink = (can('delete') && has('delete')) || (can('deleteOne') && has('deleteOne'));
+                                        }
+
+                                        return Promise.resolve();
+                                    });
+                                } else return Promise.resolve();
+                            });
+                        }
+                        else  throw new Error(`Unknown relation ${relation.type}!`);
+                    }));
+                }));
+            }).then(() => {
+                response.ok(data);
             }).catch(err => response.error('permissions_error', `Failed to load permissions!`, err));
         }
 

@@ -64,6 +64,7 @@
             this.enableAction('updateOne');
             this.enableAction('createRelation');
             this.enableAction('createOrUpdateOneRelation');
+            this.enableAction('describe');
         }
 
 

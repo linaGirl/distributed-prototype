@@ -283,7 +283,7 @@
                         break;
 
                     case 'error':
-                        errorData = `Failed to execute the ${response.actionName} action on ${response.serviceName}/${response.resourceName}: ${response.message} (${response.code}) ${response.error ? ' ('+response.error.message+')' : ''}`
+                        errorData = `Failed to execute the ${response.actionName} action on ${response.serviceName}/${response.resourceName}: ${response.message} (${response.code}) ${response.err ? ' ('+response.err.message+')' : ''}`
                         break;
                 }
 

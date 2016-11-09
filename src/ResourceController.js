@@ -17,6 +17,8 @@
 
             this.name = name;
             this.actionRegistry = new Set();
+
+            if (typeof this.enableActions === 'function') this.enableActions();
         }
 
 
@@ -73,7 +75,8 @@
             response.actionName = request.action;
 
             if (this.actionRegistry.has(request.action)) {
-                return this[request.action](request, response, permissions);
+                if (typeof this[request.action] === 'function') return this[request.action](request, response, permissions);
+                else return response.invalidAction(`The action ${request.action} was not implemented on the ${this.getName()} resource!`);
             } else return response.invalidAction(`The action ${request.action} is not registered on the ${this.getName()} resource!`);
         }
 
@@ -97,7 +100,7 @@
                 log(err);
 
                 // handle the crap
-                response.error('controller_error', `The action ${request.action} controller ${this.getName()} failed!`, err);
+                response.error('controller_error', `The action ${request.action} on the ${this.getName()} controller failed!`, err);
 
                 return Promise.resolve();
             });

@@ -252,7 +252,7 @@
                                 permission.resource === this.resourceName &&
                                 permission.allowed;
                         });
-                    });
+                    }) || allowAll;
                 } else {
 
                     // default action this instance was loaded for
@@ -267,9 +267,6 @@
                 }
             }
         }
-
-
-
 
 
 
