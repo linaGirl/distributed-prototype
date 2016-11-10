@@ -21,7 +21,8 @@
     statusCodeMap.set('badRequest', 23);
     statusCodeMap.set('serviceUnavailable', 38);
     statusCodeMap.set('forbidden', 25);
-    statusCodeMap.set('authorizationRequired', 24)
+    statusCodeMap.set('authorizationRequired', 24);
+    statusCodeMap.set('conflict', 80);
 
 
     const methodMap = new Map();
