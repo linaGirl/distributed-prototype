@@ -136,7 +136,7 @@
 
             // trigger the load method on the resource
             // if the service has finished loading
-            if (this.isLoaded())
+            if (this.isLoaded()) resource.load();
 
             this.resources.set(resource.getName(), resource);
         }

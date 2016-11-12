@@ -7,6 +7,7 @@
     const Service   = require('./Service');
     const type      = require('ee-types');
     const log       = require('ee-log');
+    const Parser    = require('./APIGatewayParser');
 
 
 
@@ -14,11 +15,11 @@
 
 
 
-    module.exports = class Website extends Service {
+    module.exports = class APIGatewayService extends Service {
 
         constructor(options) {
-            if (!type.object(options)) throw new Error(`The Website is missing the options object!`);
-            if (!options.name) options.name = 'website';
+            if (!type.object(options)) throw new Error(`The APIGatewayService is missing the options object!`);
+            if (!options.name) options.name = 'api-gateway';
             super(options);
 
             this.port = options.port || 80;
