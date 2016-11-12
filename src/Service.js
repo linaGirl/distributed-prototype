@@ -23,6 +23,11 @@
         constructor(options) {
             super();
 
+            // basic input valdiation
+            if (!type.object(options)) throw new Error(`The distributed service constructor expects an options object, got ${type(options)}!`);
+            if (!type.string(options.name) || !options.name.length) throw new Error(`The distributed service expects a non empty name property on the options object!`);
+
+            // loading status
             this.loaded = false;
             this.loading = false;
             this.loadingQueue = [];
@@ -32,10 +37,10 @@
             // the services name
             this.name = options.name;
 
-            // link to all resources
+            // resource controller storage
             this.resources = new Map();
 
-            // distributed permissions
+            // all services have permisisons support
             this.permissions = new PermissionManager(this);
         }
 
@@ -43,22 +48,50 @@
 
 
 
-
+        /**
+         * returns the serrvice name
+         */
         getName() {
             return this.name;
         }
 
+
+        /**
+         * true if fully loaded
+         */
         isLoaded() {
             return !!this.loaded;
         }
 
+
+        /**
+         * true if currently beeing loaded
+         */
         isLoading() {
             return !!this.loading;
         }
 
+
+        /**
+         * if loading the service failed this
+         * will return true
+         */
         hasFailed() {
             return !!this.error;
         }
+
+
+
+        /**
+         * deprecated! here for legacy reasons
+         */
+        getResourceNames() {
+            return Array.from(this.resources.keys());
+        }
+
+
+
+
 
         fininshedLoading(err) {
             if (err) {
@@ -80,8 +113,19 @@
 
 
 
+
+
+
+
+
+        /**
+         * register a new resource on the service
+         */
         registerResource(resource) {
-            if (this.resources.has(resource.getName())) throw new Error(`Cannot register resource ${resource.getName()}, it was already registred before!`);
+            if (!type.object(resource) || !type.function(resource.getName)) throw new Error(`Cannot register a resource on the ${this.getName()} service that is not an object or does not expose the resource.getName() method!`);
+            if (this.resources.has(resource.getName())) throw new Error(`Cannot register resource ${resource.getName()} on the ${this.getName()} service, it was already registred before!`);
+            if (this.isLoading()) throw new Error(`Cannot add resource controller ${resource.getName()} on the ${this.getName()} service while the service is beeing laoded, add it before or after it's beeing loaded!`);
+            if (this.hasFailed()) throw new Error(`Cannot add resource controller ${resource.getName()} on the ${this.getName()} service: the service has failed!`);
 
             // redirect outgoing requests
             resource.onRequest = (request, response) => this.sendRequest(request, response);
@@ -89,6 +133,10 @@
             // pass the resource some needed information
             resource.setService(this.name);
             resource.setPermissionManager(this.permissions);
+
+            // trigger the load method on the resource
+            // if the service has finished loading
+            if (this.isLoaded())
 
             this.resources.set(resource.getName(), resource);
         }
@@ -98,10 +146,24 @@
 
 
 
-
+        /**
+         * public load method
+         */
         load() {
-            if (this.hasFailed()) return Promise.reject(this.error);
-            else if (this.isLoaded()) return Promise.resolve();
+            return this.prepareLoading();
+        }
+
+
+
+
+
+
+        /**
+         * basic loading logic, calls the executeLoad method
+         */
+        prepareLoading() {
+            if (this.isLoaded()) return Promise.resolve();
+            else if (this.hasFailed()) return Promise.reject(Error(`Cannot load the ${this.getName()} service, it has failed (see service.error)!`));
             else if (this.isLoading()) {
                 return new Promise((resolve, reject) => {
                     this.loadingQueue.push({
@@ -138,14 +200,10 @@
 
 
 
-        getResourceNames() {
-            return Array.from(this.resources.keys());
-        }
 
-
-
-
-
+        /**
+         * does the actuak loading
+         */
         executeLoad() {
             return this.permissions.load().then((token) => {
                 this.token = token;
@@ -153,7 +211,6 @@
                 return this.loadResourceControllers();
             });
         }
-
 
 
 
