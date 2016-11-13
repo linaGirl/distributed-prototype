@@ -20,4 +20,10 @@
         , LegacyBridge                  : require('./src/LegacyBridge')
         , TestPermissionsService        : require('./src/TestPermissionsService')
         , PermissionManager             : require('./src/PermissionManager')
+        , Server                        : require('./src/Server')
+        , WebsiteController             : require('./src/WebsiteController')
+        , WebsiteService                : require('./src/WebsiteService')
+        , APIGatewayParser              : require('./src/APIGatewayParser')
+        , APIGatewayParserChild         : require('./src/APIGatewayParserChild')
+        , APIGatewayService             : require('./src/APIGatewayService')
     }

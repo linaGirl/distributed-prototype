@@ -645,19 +645,21 @@
 
 
         getFilterValue(filter, resourceName, propertyName, filterName, parentResourceName, parentPropertyName) {
-            if (filter.type === 'entity') parentResourceName = filter.entityName;
-            if (filter.type === 'property') parentPropertyName = filter.propertyName;
+            if (filter) {
+                if (filter.type === 'entity') parentResourceName = filter.entityName;
+                if (filter.type === 'property') parentPropertyName = filter.propertyName;
 
 
-            if ((!parentResourceName || parentResourceName === resourceName) &&
-                parentPropertyName === propertyName &&
-                filter.type === 'function' || filter.type === 'comparator') {
-                return filter.children.map(item => item.nodeValue);
-            } else {
-                const results = filter.children.map(child => this.getFilterValue(child, resourceName, propertyName, filterName, parentResourceName, parentPropertyName)).filter(v => !!v);
+                if ((!parentResourceName || parentResourceName === resourceName) &&
+                    parentPropertyName === propertyName &&
+                    filter.type === 'function' || filter.type === 'comparator') {
+                    return filter.children.map(item => item.nodeValue);
+                } else {
+                    const results = filter.children.map(child => this.getFilterValue(child, resourceName, propertyName, filterName, parentResourceName, parentPropertyName)).filter(v => !!v);
 
-                if (results.length) return results[0];
-                else return undefined;
+                    if (results.length) return results[0];
+                    else return undefined;
+                }
             }
         }
 

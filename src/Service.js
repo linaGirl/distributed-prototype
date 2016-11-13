@@ -122,10 +122,10 @@
          * register a new resource on the service
          */
         registerResource(resource) {
-            if (!type.object(resource) || !type.function(resource.getName)) throw new Error(`Cannot register a resource on the ${this.getName()} service that is not an object or does not expose the resource.getName() method!`);
-            if (this.resources.has(resource.getName())) throw new Error(`Cannot register resource ${resource.getName()} on the ${this.getName()} service, it was already registred before!`);
-            if (this.isLoading()) throw new Error(`Cannot add resource controller ${resource.getName()} on the ${this.getName()} service while the service is beeing laoded, add it before or after it's beeing loaded!`);
-            if (this.hasFailed()) throw new Error(`Cannot add resource controller ${resource.getName()} on the ${this.getName()} service: the service has failed!`);
+            if (!type.object(resource) || !type.function(resource.getName)) throw new Error(`Cannot register a resource on the '${this.getName()}' service that is not an object or does not expose the resource.getName() method!`);
+            if (this.resources.has(resource.getName())) throw new Error(`Cannot register resource '${resource.getName()}' on the '${this.getName()}' service, it was already registred before!`);
+            if (this.lockControllerRegistration) throw new Error(`Cannot add resource controller '${resource.getName()}' on the '${this.getName()}' service while the service is beeing loaded, add it before or after it's beeing loaded!`);
+            if (this.hasFailed()) throw new Error(`Cannot add resource controller '${resource.getName()}' on the '${this.getName()}' service: the service has failed!`);
 
             // redirect outgoing requests
             resource.onRequest = (request, response) => this.sendRequest(request, response);
@@ -208,7 +208,14 @@
             return this.permissions.load().then((token) => {
                 this.token = token;
 
-                return this.loadResourceControllers();
+
+                // dont accept new resource ocntrollers anymore
+                this.lockControllerRegistration = true;
+                return this.loadResourceControllers().then(() => {
+                    this.lockControllerRegistration = false;
+
+                    return Promise.resolve();
+                });
             });
         }
 
