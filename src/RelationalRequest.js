@@ -58,7 +58,7 @@
 
 
         setLanguages(languages) {
-            if (!type.array(order)) throw new Error(`Expecting an array when setting the languages on the request, got ${type(languages)} instead!`);
+            if (!type.array(languages)) throw new Error(`Expecting an array when setting the languages on the request, got ${type(languages)} instead!`);
             this.languages = languages;
             return this;
         }
