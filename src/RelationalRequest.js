@@ -28,6 +28,7 @@
                 if (options.order)                              this.setOrder(options.order);
                 if (options.relationalSelection)                this.setRelationalSelection(options.relationalSelection);
                 if (options.data)                               this.setData(options.data);
+                if (options.languages)                          this.setLanguages(options.languages);
             }
         }
 
@@ -49,6 +50,25 @@
 
         hasOrder() {
             return this.order && this.order.length;
+        }
+
+
+
+
+
+
+        setLanguages(languages) {
+            if (!type.array(order)) throw new Error(`Expecting an array when setting the languages on the request, got ${type(languages)} instead!`);
+            this.languages = languages;
+            return this;
+        }
+
+        getLanguages() {
+            return this.languages || [];
+        }
+
+        hasLanguages() {
+            return this.languages && this.languages.length;
         }
 
 
