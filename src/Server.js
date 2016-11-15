@@ -25,10 +25,7 @@
          */
         use(distributedMiddleware) {
             if (type.object(distributedMiddleware) && type.function(distributedMiddleware.express)) {
-                const expressMiddleware = distributedMiddleware.express(this.app);
-
-                // add to the app
-                if (expressMiddleware) this.app.use(expressMiddleware);
+                distributedMiddleware.express(this.app);
             } else throw new Error(`Cannot add middleware, it has to be a distributed middleware exposing the 'express' method!`);
         }
 
