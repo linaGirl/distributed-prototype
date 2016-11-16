@@ -290,7 +290,7 @@
                     else {
                         if (this.resources.has(request.resource)) {
                             this.resources.get(request.resource).receiveRequest(request, response, permissions);
-                        } else response.notFound(`The resource ${request.resource} does not exist!`);
+                        } else response.notFound(`The resource ${request.resource} does not exist on the ${this.getName()} service!`);
                     }
                 } else response.authorizationRequired(request.resource, request.action);
             }).catch(err => response.error('permissions_error', `Failed to load permissions while processing the request on the service ${this.name} and the resource ${request.resource} with the action ${request.action}!`, err));

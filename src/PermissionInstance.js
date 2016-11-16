@@ -325,7 +325,8 @@
 
 
         hasValue(valueName) {
-            return !type.undefined(this.getValue(valueName));
+            const value = this.getValue(valueName);
+            return value !== undefined && value !== null;
         }
 
 
