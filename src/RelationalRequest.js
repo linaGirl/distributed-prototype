@@ -236,7 +236,7 @@
         }
 
         setFilter(filter) {
-            this.filter = filter.root;
+            this.filter = filter.root ? filter.root : filter;
             return this;
         }
 

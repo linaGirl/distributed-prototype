@@ -38,22 +38,12 @@
 
 
 
-        /**
-         * get the limit for the tokens
-         */
-        getLimit(permission) {
-             singleton.getLimit(this.service, permission);
-        }
-
-
-
-
 
         /**
          * get the current credits
          */
         getCredits(permission) {
-             singleton.getCredits(this.service, permission);
+             singleton.getCredits(permission);
         }
     };
 })();

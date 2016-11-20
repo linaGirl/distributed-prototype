@@ -283,6 +283,22 @@
 
 
 
+
+        /**
+         * returns the rate limit with the lowest values
+         * for all tokens
+         */
+        getRateLimits() {
+            return this.permissions.filter(p => !!p.rateLimit).map(p => Object.assign({token: p.token}, p.rateLimit));
+        }
+
+
+
+
+
+
+
+
         hasRole(roleName) {
             for (const permission of this.permissions) {
                 if (permission.roles.has(roleName)) return true;
