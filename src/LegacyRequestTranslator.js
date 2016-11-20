@@ -111,7 +111,7 @@
                 else range = `${request.offset}-${request.offset+100}`;
             } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
 
-//log(request);
+
             return new this.RPCRequest({
                   filter        : this.convertToLegacyFilter(request.filter)
                 , select        : this.convertToLegaySelection(request)
@@ -193,32 +193,40 @@
 
 
                     case 'and':
-                    case 'entity':
                     case 'root':
-                        if (filter.children.length > 1) {
+                        if (filter.children.length >= 1) {
                             const andChildren = [];
                             for (const child of filter.children) {
                                 andChildren.push(this.convertToLegacyFilter(child));
                             }
                             return andChildren.join(', ');
                         }
-                        else if (filter.children.length === 1) return this.convertToLegacyFilter(filter.children[0]);
                         else return null;
 
+
+                    case 'entity':
+                        if (filter.children.length > 1) {
+                            const children = [];
+                            for (const child of filter.children) {
+                                children.push(`${filter.entityName}.${this.convertToLegacyFilter(child)}`);
+                            }
+                            return children.join(', ');
+                        }
+                        else return null;
 
 
 
                     case 'property':
                         if (filter.children.length === 0) return null;
                         else if (filter.children.length > 1) throw new Error(`Cannot build property filter with more than on child!`);
-                        else return this.convertToLegacyFilter(filter.children[0]);
+                        else return `${filter.propertyName}${this.convertToLegacyFilter(filter.children[0])}`;
 
 
 
                     case 'comparator':
                         if (filter.children.length === 0) return null;
                         else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
-                        else return filter.comparator;
+                        else return `${filter.comparator}${this.convertToLegacyFilter(filter.children[0])}`;
 
 
                     case 'function':
