@@ -395,7 +395,7 @@
                 , limit                 : ((range && range.to !== null) ? (range.to - (range.from || 0) + 1) : null)
                 , offset                : (range ? (range.from || 0) : null)
                 , options               : legacyRequest.getParameters()
-                , languages             : request.languages
+                , languages             : legacyRequest.languages
             });
 
 
