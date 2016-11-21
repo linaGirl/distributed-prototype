@@ -20,9 +20,10 @@
     statusCodeMap.set('invalidAction', 27);
     statusCodeMap.set('badRequest', 23);
     statusCodeMap.set('serviceUnavailable', 38);
-    statusCodeMap.set('forbidden', 25);
+    statusCodeMap.set('forbidden    ', 25);
     statusCodeMap.set('authorizationRequired', 24);
     statusCodeMap.set('conflict', 80);
+    statusCodeMap.set('noContent', 1);
 
 
     const methodMap = new Map();
@@ -61,8 +62,8 @@
 
 
             try {
-                response = this.convertIncomingResponse(legacyResponse)
                 request = this.convertIncomingRequest(legacyRequest);
+                response = this.convertIncomingResponse(legacyResponse, request);
             } catch (err) {
                 if (debug) log(err);
                 legacyResponse.send(37, `Failed to translate legacy to distributed request: ${err.message}`);
@@ -264,7 +265,7 @@
 
 
 
-        convertIncomingResponse(legacyResponse) {
+        convertIncomingResponse(legacyResponse, request) {
             const response = new RelationalResponse();
             let errorData;
 
@@ -295,6 +296,13 @@
                         errorData = `Failed to execute the ${response.actionName} action on ${response.serviceName}/${response.resourceName}: ${response.message} (${response.code}) ${response.err ? ' ('+response.err.message+')' : ''}`
                         break;
                 }
+
+                // check for a valid response code
+                if (!statusCodeMap.has(response.status)) {
+                    errorData = `Failed to translate the response status '${response.status}'' into a valid legacy statuscode on a request on ${request.action} ${request.service}/${request.resource}!`;
+                    response.status = 'error';
+                }
+
 
                 process.nextTick(() => {
                     legacyResponse.send(statusCodeMap.get(response.status), errorData || response.data);

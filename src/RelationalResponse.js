@@ -28,7 +28,7 @@
 
 
         noContent(...ids) {
-            this.status = 'created';
+            this.status = 'noContent';
 
             this.data = {
                   serviceName: this.serviceName
