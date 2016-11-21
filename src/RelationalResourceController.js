@@ -650,10 +650,10 @@
                 if (filter.type === 'property') parentPropertyName = filter.propertyName;
 
 
-                if ((!parentResourceName || parentResourceName === resourceName) &&
-                    parentPropertyName === propertyName &&
-                    filter.type === 'function' || filter.type === 'comparator') {
-                    return filter.children.map(item => item.nodeValue);
+                if ((!parentResourceName || parentResourceName === resourceName) && parentPropertyName === propertyName && (filter.type === 'function' || filter.type === 'comparator')) {
+                    //log.warn(filter.type, filter.children.length, resourceName, propertyName, parentResourceName, parentPropertyName);
+                    if (filter.type === 'function') return filter.children.map(item => item.nodeValue);
+                    else return filter.children[0].nodeValue;
                 } else {
                     const results = filter.children.map(child => this.getFilterValue(child, resourceName, propertyName, filterName, parentResourceName, parentPropertyName)).filter(v => !!v);
 
