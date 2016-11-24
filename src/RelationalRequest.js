@@ -247,7 +247,7 @@
 
 
         hasSelection(name) {
-            return this.selection.indexOf(name) >= 0;
+            return this.selection.includes(name);
         }
 
         removeSelection(name) {

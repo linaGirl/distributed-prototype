@@ -77,6 +77,21 @@
 
 
 
+
+
+
+        getTokens() {
+            return this.permission.map(p => p.token);
+        }
+
+
+
+
+
+
+
+
+
         getRestrictions() {
             if (!this.restrictions) {
                 const list = [];
@@ -163,6 +178,29 @@
                 const instance = new PermissionInstance({
                     permissions: this.permissions.filter((p) => {
                         return p.type === 'app' && (type.undefined(id) || p.id == id);
+                    })
+                    , isChild: true
+                    , manager: this.manager
+                    , serviceName: this.serviceName
+                    , resourceName: this.resourceName
+                    , actionName: this.actionName
+                });
+
+                this.instanceCache.set(cacheId, instance);
+            }
+
+            return this.instanceCache.get(cacheId);
+        }
+
+
+        external() {
+            if (this.isChild) throw new Error(`Cannot get external from permissions, you're already working on an external set!`);
+            const cacheId = `external:[all]`;
+
+            if (!this.instanceCache.has(cacheId)) {
+                const instance = new PermissionInstance({
+                    permissions: this.permissions.filter((p) => {
+                        return p.type === 'app' || p.type === 'user';
                     })
                     , isChild: true
                     , manager: this.manager
