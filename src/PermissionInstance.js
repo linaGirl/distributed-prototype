@@ -81,7 +81,7 @@
 
 
         getTokens() {
-            return this.permission.map(p => p.token);
+            return this.permissions.map(p => p.token);
         }
 
 
