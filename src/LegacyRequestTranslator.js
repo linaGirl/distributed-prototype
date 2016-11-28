@@ -137,7 +137,7 @@
                             const rlLeft = result.response.getHeader('Rate-Limit-Balance');
                             let limits;
 
-                            if (rlHeader && rlHeader.length) limits = /((\d+)\/(\d+)s)/.exec(rlHeader);
+                            if (rlHeader && rlHeader.length) limits = /(\d+)\/(\d+)s/.exec(rlHeader);
 
                             return response.tooManyRequests(limits ? parseInt(limits[2], 10) : 60, limits ? parseInt(limits[1], 10) : 0, parseInt(rlLeft ? rlLeft+'' : 0, 10));
                         case 38: return response.error('legacy_error', `The legacy layer returned an error!`, data.err);
