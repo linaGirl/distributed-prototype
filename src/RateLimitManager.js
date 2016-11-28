@@ -8,6 +8,7 @@
     // that the rate limiting takes far less
     // resources and is also way more accurate
     const singleton = require('./RateLimitSingleton');
+    const log       = require('ee-log');
 
 
 
@@ -37,13 +38,17 @@
 
 
 
+        getInfo(permission) {
+            return singleton.getInfo(permission);
+        }
+
 
 
         /**
          * get the current credits
          */
         getCredits(permission) {
-             singleton.getCredits(permission);
+             return singleton.getCredits(permission);
         }
     };
 })();

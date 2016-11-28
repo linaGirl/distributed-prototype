@@ -5,6 +5,7 @@
 
 
     const Cachd             = require('cachd');
+    const log               = require('ee-log');
     const LeakyBucket       = require('leaky-bucket');
     const RelationalRequest = require('./RelationalRequest');
 
@@ -33,7 +34,7 @@
 
 
             // make sure updated valuea are stored in the db
-            this.interval = setInterval(this.storeValues.bind(this), 1000);
+            //this.interval = setInterval(this.storeValues.bind(this), 1000);
         }
 
 
@@ -50,7 +51,7 @@
                     , resource: 'rateLimit'
                     , resourceId: limit.token
                     , data: {
-                        
+
                     }
                 }).send(this).then().catch();
             }
@@ -86,10 +87,28 @@
          * get the current credits
          */
         getCredits(permission) {
-            const limit = this.manageLimits(service, permission);
+            const limit = this.manageLimits(null, permission);
 
             if (limit) {
                 return limit.bucket.getInfo().left;
+            } else {
+                return null;
+            }
+        }
+
+
+
+
+
+
+        /**
+         * get the current credits
+         */
+        getInfo(permission) {
+            const limit = this.manageLimits(null, permission);
+
+            if (limit) {
+                return limit.bucket.getInfo();
             } else {
                 return null;
             }
@@ -113,7 +132,10 @@
                           bucket    : bucket
                         , credits   : limit.credits
                         , service   : service
+                        , interval  : limit.interval
                     });
+                } else {
+                    this.tokenCache.get(limit.token).service = service;
                 }
 
                 return limit.token;
@@ -132,7 +154,7 @@
             let limit;
 
             tokens.forEach((token) => {
-                const currentLimit = this.tokenCache.get(limit.token);
+                const currentLimit = this.tokenCache.get(token);
                 if (!limit || currentLimit.credits < limit.credits) limit = currentLimit;
             });
 

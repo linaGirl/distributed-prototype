@@ -78,8 +78,6 @@
 
 
 
-
-
         getTokens() {
             return this.permissions.map(p => p.token);
         }
@@ -318,6 +316,26 @@
 
 
 
+
+
+
+        getRateLimitCredits() {
+            return this.manager.rateLimitManager.getCredits(this);
+        }
+
+
+
+
+        getRateLimitInfo() {
+            return this.manager.rateLimitManager.getInfo(this);
+        }
+
+
+
+
+        payRateLimit(amount) {
+            return this.manager.rateLimitManager.pay(this, amount);
+        }
 
 
 

@@ -13,11 +13,12 @@
 
         constructor(options) {
             if (type.object(options)) {
-                if (options.resource) this.setResource(options.resource);
-                if (options.service) this.setService(options.service);
-                if (options.action) this.setAction(options.action);
-                if (options.tokens) this.setTokens(options.tokens);
-                if (options.options) this.setOptions(options.options);
+                if (options.resource)   this.setResource(options.resource);
+                if (options.service)    this.setService(options.service);
+                if (options.action)     this.setAction(options.action);
+                if (options.tokens)     this.setTokens(options.tokens);
+                if (options.token)      this.setToken(options.token);
+                if (options.options)    this.setOptions(options.options);
             }
         }
 

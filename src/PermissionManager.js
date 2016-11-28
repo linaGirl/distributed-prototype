@@ -6,6 +6,7 @@
     const PermissionInstance        = require('./PermissionInstance');
     const PermissionLearner         = require('./PermissionLearner');
     const PermissionTokenManager    = require('./PermissionTokenManager');
+    const RateLimitManager          = require('./RateLimitManager');
 
 
     const Cachd     = require('cachd');
@@ -42,6 +43,9 @@
             // null permissions for tokenless requests
             this.nullPermissions = new Map();
 
+
+            // rat elimtis are managed on a per service base
+            this.rateLimitManager = new RateLimitManager(this.service);
 
 
             // queue for permissions that are currentl ybeeing loaded
