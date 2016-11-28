@@ -139,7 +139,7 @@
 
                             if (rlHeader && rlHeader.length) limits = /((\d+)\/(\d+)s)/.exec(rlHeader);
 
-                            return response.tooManyRequests(limits ? paresInt(limits[2], 10) : 0, limits ? paresInt(limits[1], 10) : 0, rateLimit[1], parseInt(rlLeft ? rlLeft+'' : 0, 10));
+                            return response.tooManyRequests(limits ? parseInt(limits[2], 10) : 0, limits ? parseInt(limits[1], 10) : 0, rateLimit[1], parseInt(rlLeft ? rlLeft+'' : 0, 10));
                         case 38: return response.error('legacy_error', `The legacy layer returned an error!`, data.err);
                         default: return response.error('legacy_error', `The legacy layer returned an unknown status ${status}!`, data.err);
                     }
