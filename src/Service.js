@@ -183,17 +183,17 @@
 
                 // start loading after we return
                 process.nextTick(() => {
-                    this.executeLoad()
-                        .then(() => {
-                            clearTimeout(timeoutTimer);
-                            this.fininshedLoading();
-                        })
-                        .catch(err => this.fininshedLoading(err));
+                    this.executeLoad().then(() => {
+
+                        // k, we dont need the timeout anymore
+                        clearTimeout(timeoutTimer);
+                        this.fininshedLoading();
+                    }).catch(err => this.fininshedLoading(err));
                 });
 
 
                 // add to queue
-                return this.load();
+                return this.prepareLoading();
             }
         }
 
