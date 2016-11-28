@@ -132,6 +132,14 @@
                     switch (status) {
                         case 1: return response.ok(data);
                         case 2: return response.created(data.id);
+                        case 32:
+                            const rlHeader = result.response.getHeader('Rate-Limit');
+                            const rlLeft = result.response.getHeader('Rate-Limit-Balance');
+                            let limits;
+
+                            if (rlHeader && rlHeader.length) limits = /((\d+)\/(\d+)s)/.exec(rlHeader);
+
+                            return response.tooManyRequests(limits ? paresInt(limits[2], 10) : 0, limits ? paresInt(limits[1], 10) : 0, rateLimit[1], parseInt(rlLeft ? rlLeft+'' : 0, 10));
                         case 38: return response.error('legacy_error', `The legacy layer returned an error!`, data.err);
                         default: return response.error('legacy_error', `The legacy layer returned an unknown status ${status}!`, data.err);
                     }

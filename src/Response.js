@@ -80,6 +80,18 @@
 
 
 
+
+        tooManyRequests(interval, credits, creditsLeft) {
+            this.message = `Rate limit exceeded: you've got ${credits} per ${interval} seconds, you have currently ${creditsLeft} left!`;
+            this.status = 'tooManyRequests';
+            this.interval = interval;
+            this.credits = credits;
+            this.creditsLeft = creditsLeft;
+            this.send();
+        }
+
+
+
         authorizationRequired(resource, action) {
             this.message = `You are not allowed execute the action ${action} on the ${this.serviceName}:${resource} resource!`;
             this.code = 'authorization_required';
