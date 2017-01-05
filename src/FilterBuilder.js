@@ -167,5 +167,28 @@
             if (this.parent) return this.parent.root;
             else return this;
         }
+
+
+
+        getJSON() {
+            const data =  {
+                  type: this.type
+                , children: this.children.map(child => child.getJSON())
+            };
+
+            // i wish i had thought this throug a bit earlier :/
+            if (this.type === 'comparator')     data.comparator     = this.comparator;
+            if (this.type === 'function')       data.functionName   = this.functionName;
+            if (this.type === 'entity')         data.entityName     = this.entityName;
+            if (this.type === 'property')       data.propertyName   = this.propertyName;
+            if (this.type === 'value')          data.nodeValue      = this.nodeValue;
+
+            return data;
+        }
+
+
+        toJSON() {
+            return this.root.getJSON();
+        }
     };
 })();

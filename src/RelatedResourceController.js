@@ -466,7 +466,7 @@
 
                     if (type.array(column.belongsTo)) {
                         column.belongsTo.forEach((belongsToDefinition) => {
-                            this.registerBelongsTo(belongsToDefinition.name, {
+                            this.registerBelongsTo(belongsToDefinition.aliasName || belongsToDefinition.name, {
                                   property              : column.name
                                 , remote: {
                                       resource          : belongsToDefinition.model.alias || belongsToDefinition.name
