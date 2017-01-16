@@ -577,14 +577,13 @@
 
                 case 'function':
                     if (filter.children.length === 0) return null;
-                    else if (filter.children.length > 1) throw new Error(`Cannot build function filter with more than on child!`);
                     else {
                         if (comparators.has(filter.functionName)) {
                             const fn = this.Related[comparators.get(filter.functionName)];
                             const parameters = filter.children.map(child => this.applyRelatedFilter(child));
-                            return fn.apply(this.Related, parameters); //this.Related[comparators.get(filter.functionName)](this.applyRelatedFilter(filter.children[0]));
+                            return fn.apply(this.Related, parameters);
                         }
-                        else throw new Error(`Invalid function ${filter.functionName}!`);
+                        else throw new Error(`Invalid function ${filter.functionName}. Please use one of the following functions: ${Array.from(comparators.values()).join(', ')}!`);
                     }
 
 
