@@ -25,10 +25,11 @@
 
         addProperty(name, definition) {
             this.properties.set(name, {
-                  name          : name
-                , type          : definition.type
-                , nullable      : !!definition.nullable
-                , isPrimary     : definition.isPrimary
+                  name              : name
+                , type              : definition.type
+                , representation    : definition.representation
+                , nullable          : !!definition.nullable
+                , isPrimary         : definition.isPrimary
             });
         }
 

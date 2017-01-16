@@ -294,10 +294,11 @@
             // local properties
             for (const property of this.definition.properties.values()) {
                 data.properties.push({
-                      name      : property.name
-                    , type      : property.type
-                    , nullable  : property.nullable
-                    , readonly  : null
+                      name              : property.name
+                    , type              : property.type
+                    , representation    : property.representation
+                    , nullable          : property.nullable
+                    , readonly          : null
                 });
             }
 

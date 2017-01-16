@@ -439,10 +439,12 @@
                 Object.keys(tableDefinition.columns).forEach((columnName) => {
                     const column = tableDefinition.columns[columnName];
 
+
                     this.definition.addProperty(columnName, {
-                          type          : column.type
-                        , nullable      : column.nullable || column.isAutoIncrementing || column.defaultValue
-                        , isPrimary     : column.isPrimary
+                          type              : column.type
+                        , representation    : column.jsTypeMapping
+                        , nullable          : column.nullable || column.isAutoIncrementing || column.defaultValue
+                        , isPrimary         : column.isPrimary
                     });
                 });
 
