@@ -33,15 +33,23 @@
 
 
         intercept(resourceName, action, listener) {
+            let resource;
+
 
             // we're ok ;)
             this.loaded = true;
 
 
-            const resource = new ResourceController(resourceName);
+            // check if the resource exists already
+            if (this.resources.has(resourceName)) resource = this.resources.get(resourceName);
+            else {
+                resource = new ResourceController(resourceName);
+                this.registerResource(resource);
+            }
+        
+        
             resource[action] = listener;
             resource.enableAction(action);
-            this.registerResource(resource);
         }
 
 
