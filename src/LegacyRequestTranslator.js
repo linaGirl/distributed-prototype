@@ -23,7 +23,9 @@
     statusCodeMap.set('forbidden    ', 25);
     statusCodeMap.set('authorizationRequired', 24);
     statusCodeMap.set('conflict', 80);
-    statusCodeMap.set('noContent', 1);
+    statusCodeMap.set('noContent', 204);
+    statusCodeMap.set('accepted', 202);
+    statusCodeMap.set('seeOther', 303);
 
 
     const methodMap = new Map();
@@ -286,7 +288,10 @@
 
                 switch(response.status) {
                     case 'created':
-                        legacyResponse.setHeader('Location', `/${response.data.resourceName}/${response.data.id}`);
+                    case 'seeOther':
+                    case 'accepted':
+                    case 'noContent':
+                        legacyResponse.setHeader('Location', `/${response.data.serviceName}.${response.data.resourceName}/${response.data.id}`);
                         break;
 
                     case 'invalidAction':

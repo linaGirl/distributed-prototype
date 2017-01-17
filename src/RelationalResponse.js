@@ -38,5 +38,32 @@
 
             this.send();
         }
+
+
+
+        accepted(...ids) {
+            this.status = 'accepted';
+
+            this.data = {
+                  serviceName: this.serviceName
+                , resourceName: this.resourceName
+                , id: ids && ids.length === 1 ? ids[0] : ids
+            };
+            this.send();
+        }
+
+
+
+
+        seeOther(...ids) {
+            this.status = 'seeOther';
+            
+            this.data = {
+                  serviceName: this.serviceName
+                , resourceName: this.resourceName
+                , id: ids && ids.length === 1 ? ids[0] : ids
+            };
+            this.send();
+        }
     };
 })();
