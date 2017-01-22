@@ -247,7 +247,7 @@
 
 
         hasSelection(name) {
-            return this.selection.includes(name);
+            return this.selection && this.selection.includes(name);
         }
 
         removeSelection(name) {
