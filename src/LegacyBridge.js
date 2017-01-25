@@ -15,6 +15,8 @@
 
             this.name = 'distributed-legacy-service-bridge';
 
+            this.silent = process.argv.includes('--silent');
+
 
             this.serviceManager = serviceManager;
 
@@ -138,11 +140,11 @@
                 if (!this.silent) {
                     console.log('');
                     for (const serviceName of this.serviceManager.services.keys()) {
-                        console.log(' ▸'.yellow.bold+' The '+serviceName.blue.bold+' service was loaded successfully '.white+'('.grey+(this.serviceManager.services.get(serviceName).resources.size+'').grey+' controllers)'.grey);
+                        if (!this.silent) console.log(' ▸'.yellow.bold+' The '+serviceName.blue.bold+' service was loaded successfully '.white+'('.grey+(this.serviceManager.services.get(serviceName).resources.size+'').grey+' controllers)'.grey);
                     }
 
-                    console.log('');
-                    console.log(' ▸'.red.bold+' Distributed is ready!'.white);
+                    if (!this.silent) console.log('');
+                    if (!this.silent) console.log(' ▸'.red.bold+' Distributed is ready!'.white);
                 }
 
                 callback();
