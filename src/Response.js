@@ -121,6 +121,21 @@
 
 
 
+        /**
+         * pipes the other response into
+         * this one
+         */
+        pipe(originalResponse) {
+            if (originalResponse.data) this.data = originalResponse.data;
+            if (originalResponse.message) this.message = originalResponse.message;
+            if (originalResponse.status) this.data = originalResponse.status;
+
+            return this.send();
+        }
+
+
+
+
         hasData() {
             return !type.undefined(this.data);
         }
