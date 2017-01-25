@@ -45,7 +45,7 @@
             // check if we have to load the service
             if (this.loading && this.loaded) {
                 service.load().then(() => {
-                    
+
                     // manage requests
                     service.onRequest = this.handleRequest.bind(this);
 
@@ -59,6 +59,26 @@
                 // register
                 this.services.set(service.getName(), service);
             }
+        }
+
+
+
+
+
+        removeService(service) {
+            const name = typeof service === 'object' ? service.getName() : service;
+
+            if (this.services.has(name)) {
+                const service = this.services.get(name);
+
+                // remove hooks
+                service.clearHooks();
+
+                // remove
+                this.services.delete(name);
+
+                return true;
+            } else return false;
         }
 
 
