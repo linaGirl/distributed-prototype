@@ -24,9 +24,14 @@
 
 
         load() {
+            this.loading = true;
             return Promise.all(Array.from(this.services.keys()).map((serviceName) => {
                 return this.services.get(serviceName).load();
-            })).then(() => Promise.resolve());
+            })).then(() => {
+                this.loaded = true;
+                this.loading = false;
+                return Promise.resolve();
+            });
         }
 
 
@@ -36,11 +41,24 @@
         registerService(service) {
             if (this.services.has(service.getName())) throw new Error(`Cannot register service ${service.getName()}. It was already registered before!`);
 
-            // manage requests
-            service.onRequest = this.handleRequest.bind(this);
 
-            // register
-            this.services.set(service.getName(), service);
+            // check if we have to load the service
+            if (this.loading && this.loaded) {
+                service.load().then(() => {
+                    
+                    // manage requests
+                    service.onRequest = this.handleRequest.bind(this);
+
+                    // register
+                    this.services.set(service.getName(), service);
+                }).catch(err);
+            } else {
+                // manage requests
+                service.onRequest = this.handleRequest.bind(this);
+
+                // register
+                this.services.set(service.getName(), service);
+            }
         }
 
 

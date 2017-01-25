@@ -126,9 +126,11 @@
          * this one
          */
         pipe(originalResponse) {
-            if (originalResponse.data) this.data = originalResponse.data;
-            if (originalResponse.message) this.message = originalResponse.message;
-            if (originalResponse.status) this.status = originalResponse.status;
+            if (originalResponse.data)      this.data       = originalResponse.data;
+            if (originalResponse.message)   this.message    = originalResponse.message;
+            if (originalResponse.status)    this.status     = originalResponse.status;
+            if (originalResponse.code)      this.code       = originalResponse.code;
+            if (originalResponse.error)     this.error      = originalResponse.error;
 
             return this.send();
         }
