@@ -128,7 +128,7 @@
         pipe(originalResponse) {
             if (originalResponse.data) this.data = originalResponse.data;
             if (originalResponse.message) this.message = originalResponse.message;
-            if (originalResponse.status) this.data = originalResponse.status;
+            if (originalResponse.status) this.status = originalResponse.status;
 
             return this.send();
         }
