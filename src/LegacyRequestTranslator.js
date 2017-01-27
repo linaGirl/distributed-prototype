@@ -115,6 +115,7 @@
             } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
 
 
+
             return new this.RPCRequest({
                   filter        : this.convertToLegacyFilter(request.filter)
                 , select        : this.convertToLegaySelection(request)
@@ -127,13 +128,63 @@
                 , accessTokens  : request.tokens
             }).convert().then((result) => { //log(result.request);
 
+
+
+
+                if (request.hasOption('legacyProperties')) {
+
+                    // set stuff directly on the legacy request object
+                    const properties = request.getOoption('legacyProperties');
+                    if (type.object(properties)) {
+                        const keys = Object.keye(properties);
+                        for (key in keys) {
+                            try {
+                                result.request[key] = properties[key];
+                            } catch (err) {
+                                return Promise.reject(new Error(`Failed to set the property ${key} on the legacy request object!`));
+                            };
+                        };
+                    }
+                }
+
+
                 // get results
                 result.response.on('end', (status, data) => {
                     response.data = data;
 
+                    // check if there is somebody settnig cookies, 
+                    // move them to the options object
+                    const keys = Object.keys(result.response.headers).map(key => ({
+                          key: key
+                        , id: key.toLowerCase().trim()
+                    })).filter(o => o.id === 'set-cookie');
+
+                    keys.forEach((key) => {
+                        const value = result.response.headers[key.key];
+
+                        // parse cookie
+                        const parts = /\s*([^=]+)=([^;]+)/gi.exec(value);
+                        if (parts) {
+                            if (!response.cookies) response.cookies = {};
+                            response.cookies[parts[1].trim()] = parts[2].trim();
+                        }
+                    });
+
+
+
+
                     switch (status) {
-                        case 1: return response.ok(data);
-                        case 2: return response.created(data.id);
+                        case 1:     return response.ok(data);
+                        case 2:     return response.created(data.id);
+                        case 202:   return response.accepted(data.id);
+                        case 204:   return response.noContent(data.id);
+                        case 303:   return response.seeOther(data.id);
+                        case 26:    return response.notFound(`The requested resource was not found!`);
+                        case 80:    return response.conflict(`There was a conflict on the requested resource!`);
+                        case 23:    return response.badRequest('legacy_error', `The request was malformed!`);
+                        case 24:    return response.forbidden('forbidden', `You are not allowed to access the resource!`);
+                        case 25:    return response.authorizationRequired('unknown', result.reques.getAction());
+                        case 27:    return response.invalidAction(`The action ${result.reques.getAction()} was not implemetned on the resource!`);
                         case 32:
                             const rlHeader = result.response.getHeader('Rate-Limit');
                             const rlLeft = result.response.getHeader('Rate-Limit-Balance');
