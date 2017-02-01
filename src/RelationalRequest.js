@@ -251,12 +251,15 @@
         }
 
         removeSelection(name) {
-            this.selection.some((key, index) => {
-                if (key === name) {
-                    this.selection.splice(index, 1);
-                    return true;
-                }
-            });
+            if (!name) this.selection = [];
+            else {
+                this.selection.some((key, index) => {
+                    if (key === name) {
+                        this.selection.splice(index, 1);
+                        return true;
+                    }
+                });
+            }
         }
 
         addSelection(...fields) {
@@ -266,6 +269,11 @@
                 else this.selection = this.selection.concat(fields);
             }
             return this;
+        }
+
+
+        getSelection() {
+            return this.selection || [];
         }
 
 
@@ -286,7 +294,8 @@
         }
 
         removeRelationalSelection(name) {
-            if (this.hasRelationalSelection(name)) return this.relationalSelection.delete(name);
+            if (name && this.hasRelationalSelection(name)) return this.relationalSelection.delete(name);
+            else if (!name) delete this.relationalSelection;
         }
 
         getRelationalSelection(name) {

@@ -26,12 +26,21 @@
             return !!this.filter;
         }
 
+        removeFilter() {
+            this.filter = null;
+            return this;
+        }
+
+
+
+
+
+
+
 
         hasSelection() {
             return this.selection && this.selection.length;
         }
-
-
 
         addSelection(item) {
             if (!this.selection) this.selection = [];
@@ -39,12 +48,12 @@
             else this.selection.push(item);
         }
 
-
-
-        removeFilter() {
-            this.filter = null;
-            return this;
+        getSelection() {
+            return this.selection || [];
         }
+
+
+
 
 
 
@@ -54,15 +63,25 @@
             return this;
         }
 
-
-
         addSubSelections(selections) {
             selections.forEach(s => this.children.push(s));
             return this;
         }
 
 
+        hasRelationalSelection(name) {
+            for (const selection of this.children) {
+                if (selection.resource === name) return true;
+            }
+            return false;
+        }
 
+
+        getRelationalSelection(name) {
+            for (const selection of this.children) {
+                if (selection.resource === name) return selection;
+            }
+        }
 
         getSubselectionMap() {
             const map = new Map();

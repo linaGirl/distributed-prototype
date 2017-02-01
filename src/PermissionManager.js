@@ -40,16 +40,13 @@
                 , removalStrategy: 'leastUsed'
             });
 
-            // null permissions for tokenless requests
-            this.nullPermissions = new Map();
+
+            // null permissions for returnquests lacking a token
+            this.nullPermission = new PermissionInstance([]);
 
 
             // rat elimtis are managed on a per service base
             this.rateLimitManager = new RateLimitManager(this.service);
-
-
-            // queue for permissions that are currentl ybeeing loaded
-            this.loaderQueue = new Map();
 
 
             if (learningSession) {
@@ -88,141 +85,68 @@
 
 
 
-        getCacheKey(tokens, serviceName, resourceName, actionName) {
-            const actionId = this.getActionId(serviceName, resourceName, actionName);
 
 
-            if (type.array(tokens)) return crypto.createHash('md5').update(`${tokens.sort().join(':')}/${actionId}`).digest('hex');
-            else return crypto.createHash('md5').update(`${tokens}/${actionId}`).digest('hex');
-        }
-
-
-
-
-        getActionId(serviceName, resourceName, actionName) {
-            return `${serviceName}::${resourceName}:${actionName}`;
-        }
-
-
-
-
-
-
-
-
-
-        getPermissions(tokens, serviceName, resourceName, actionName, request) {
+        getPermissions(tokens) {
             if (type.array(tokens) && tokens.length) {
-                const cacheId = this.getCacheKey(tokens, serviceName, resourceName, actionName);
+                const cacheId = tokens.sort().join(':');
 
-                if (this.instanceCache.has(cacheId)) return Promise.resolve(this.instanceCache.get(cacheId));
+
+                // maybe the combinition fo token permissions
+                // was cached already
+                if (this.instanceCache.has(cacheId)) return this.instanceCache.get(cacheId);
                 else {
-                    return Promise.all(tokens.map((token) => {
-                        const tokenCacheId = this.getCacheKey(token, serviceName, resourceName, actionName);
+                    const instancePromise = new Promise((resolve, reject) => {
+                        // load permission for the individual tokens
+                        // either from the cache or from the permissions
+                        // service
+                        return Promise.all(tokens.map((token) => {
 
-                        if (this.cache.has(tokenCacheId)) return Promise.resolve(this.cache.get(tokenCacheId));
-                        else if (this.loaderQueue.has(tokenCacheId)) {
+                            if (this.cache.has(token)) return this.cache.get(token);
+                            else {
+                                const promise = this.loadPermission(token).catch((err) => {
 
-                            // the permissions are already beeing loaded
-                            // wait for the other call to return
-                            return new Promise((resolve, reject) => {
-                                this.loaderQueue.get(tokenCacheId).push({
-                                      resolve   : resolve
-                                    , reject    : reject
+                                    // dont cache errors
+                                    this.cache.remove(token);
+
+                                    return Promise.reject(err);
                                 });
+
+                                // cache the promise, not tha value
+                                this.cache.set(token, promise);
+
+
+                                return promise;
+                            }
+                        })).then((permissionPormises) => {
+
+
+                            // we're getting promises, wait for all to
+                            // be resolved
+                            return Promise.all(permissionPormises).then((permissions) => {
+
+
+                                // filter empty ones and create a new instance
+                                resolve(new PermissionInstance(permissions.filter(p => type.object(p))));
                             });
-                        }
-                        else {
-                            // mark as loading
-                            this.loaderQueue.set(tokenCacheId, []);
+                        }).catch((err) => {
 
-                            // get from service
-                            return this.loadPermission(token, serviceName, resourceName, actionName).then((data) => {
-                                const permission = this.preparePermission(data, serviceName, resourceName, actionName);
+                            // dont cache this one, we should cache errors, but not too long. 
+                            // yes, this is a todo :D
+                            this.instanceCache.remove(cacheId);
 
-                                // add to tokencache
-                                if (!learningSession) this.cache.set(tokenCacheId, permission);
-
-                                // return all other calls in
-                                // the correct order
-                                process.nextTick(() => {
-                                    this.loaderQueue.get(tokenCacheId).forEach(promise => promise.resolve(permission));
-
-                                    // remove, we're done
-                                    this.loaderQueue.delete(tokenCacheId);
-                                });
-
-                                // return
-                                return Promise.resolve(permission);
-                            }).catch((err) => { //log(err);
-
-                                // return to all waiting parties
-                                process.nextTick(() => {
-                                    this.loaderQueue.get(tokenCacheId).forEach(promise => promise.resolve(err));
-
-                                    // remove, we're done
-                                    this.loaderQueue.delete(tokenCacheId);
-                                });
-
-
-                                return Promise.resolve(err);
-                            });
-                        }
-                    })).then((permissions) => { // log(tokens, permissions);
-
-                        // some results may have resulted in errors
-                        // check if that's the case
-                        const hasErrors = permissions.some(k => k instanceof Error);
-
-
-                        // it's entierly possible that the permissions
-                        // result was empty, fitler those items
-                        permissions = permissions.filter(k => !!k && !(k instanceof Error));
-
-
-                        const instance = new PermissionInstance({
-                              permissions       : permissions
-                            , serviceName       : serviceName
-                            , resourceName      : resourceName
-                            , actionName        : actionName
-                            , manager           : this
+                            reject(err);
                         });
-
-                        // add to instancecache, but only if there
-                        // were no errors
-                        if (!learningSession && !hasErrors) this.instanceCache.set(cacheId, instance);
-
-                        // return to user
-                        return Promise.resolve(instance);
                     });
+
+
+                    // cache the promise
+                    this.instanceCache.set(cacheId, instancePromise);
+
+
+                    return instancePromise;
                 }
-            } else {
-                const nullCacheId = this.getActionId(serviceName, resourceName, actionName);
-
-                if (!this.nullPermissions.has(nullCacheId)) {
-                    this.nullPermissions.set(nullCacheId, new PermissionInstance({
-                          permissions       : []
-                        , serviceName       : serviceName
-                        , resourceName      : resourceName
-                        , actionName        : actionName
-                        , manager           : this
-                    }));
-                }
-
-                if (learningSession && serviceName !== 'permissions' && resourceName !== 'authorization') {
-                    let requestingService = '[unknown]';
-                    let requestingResource = '[unknown]';
-
-                    if (request) {
-                        if (request.requestingService) requestingService = request.requestingService;
-                        if (request.requestingResource) requestingResource = request.requestingResource;
-                    }
-
-                    console.log('Request '.grey+'without'.yellow.bold+' token on '.grey+serviceName.green.bold+'/'.grey+resourceName.magenta.bold+':'.grey+actionName.blue.bold+' issued by '.grey+requestingService.green.bold+'/'.grey+requestingResource.magenta.bold);
-                }
-
-                return Promise.resolve(this.nullPermissions.get(nullCacheId));
-            }
+            } else return Promise.resolve(this.nullPermission);
         }
 
 
@@ -230,59 +154,16 @@
 
 
 
-
-        getActionPermissions(request) {
-            const tokens        = request.tokens;
-            const serviceName   = request.service;
-            const resourceName  = request.resource;
-            const actionName    = request.action;
-
-
-            return this.getPermissions(tokens, serviceName, resourceName, actionName, request);
-        }
-
-
-
-
-
-
-        preparePermission(permission, serviceName, resourceName, actionName) {
-            if (permission && permission.length) {
-                const item = permission[0];
-
-                if (item.permissions && item.permissions.length) {
-                    item.permissions = item.permissions.filter((entry) => {
-                        return entry.service === serviceName &&
-                            entry.resource === resourceName &&
-                            entry.action === actionName;
-                    });
-                }
-
-                return item;
-            }
-            return undefined;
-        }
-
-
-
-
-
-
-        loadPermission(token, serviceName, resourceName, actionName) {
+        loadPermission(token) {
             return new RelationalRequest({
                   service       : 'permissions'
                 , resource      : 'authorization'
                 , resourceId    : token
                 , selection     : ['*']
                 , action        : 'listOne'
-                , data: {
-                      serviceName   : serviceName
-                    , resourceName  : resourceName
-                    , actionName    : actionName
-                }
             }).send(this.service).then((response) => {
-                if (response.status === 'ok') return Promise.resolve(response.data);
-                else return Promise.reject(new Error(`request failed, response status ${response.status}!`));
+                if (response.status === 'ok' || response.status === 'notFound') return Promise.resolve(response.data);
+                else return Promise.reject(response.toError());
             }).catch(err => Promise.reject(new Error(`Failed to load permissions: ${err.message}`)));
         }
     }

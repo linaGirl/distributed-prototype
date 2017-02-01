@@ -121,6 +121,48 @@
 
 
 
+
+
+        /**
+         * creates a proper error for each status
+         */
+        toError() {
+            switch (this.status) {
+                case 'authorizationRequired': 
+                case 'tooManyRequests':
+                case 'forbidden':
+                case 'serviceUnavailable':
+                case 'badRequest':
+                case 'invalidAction':
+                case 'conflict':
+                case 'notFound':
+                    return new Error(this.formatErrorMessage(this.message));
+
+                case 'error':
+                    return new Error(this.formatErrorMessage(`${this.message}${this.err ? ` :${this.err.message}` : ''}`));
+
+                case 'ok':
+                    return new Error(`Canont create Error from response since the response has the status ${this.status} which ois not an error!`);
+
+                case undefined:
+                case null:
+                    return new Error(`Canont create Error from response since the response has no status!`);
+
+                default:
+                    return new Error(`Canont create Error from response: unknown status ${this.status}!`);
+            }
+        }
+
+
+
+        formatErrorMessage(message) {
+            return `The response returned the status ${this.status}${this.code ? ` (${this.code})` : ''}: ${message}`;
+        }
+
+
+
+
+
         /**
          * pipes the other response into
          * this one

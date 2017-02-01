@@ -12,63 +12,48 @@
 
 
 
+    const hasProperty = (obj, property) => {
+        return type.object(obj) && Object.hasOwnProperty.call(obj, property);
+    };
+
+    const hasData = (obj) => {
+        return type.object(obj) && Object.keys(obj).length;
+    }
+
+
+
+
+
+
+
+
+
 
 
     module.exports = class PermissionInstance {
 
 
-        constructor(options) {
-            const permissions = options.permissions;
+        constructor(permissions, type) {
 
-            this.serviceName = options.serviceName;
-            this.resourceName = options.resourceName;
-            this.actionName = options.actionName;
-
-
-            if (permissions) {
-                if (!type.array(permissions)) throw new Error(`Expected an permissions array, got ${type(permissions)}!`);
-
-                permissions.forEach((permission) => {
-
-                    // convert incomin items
-                    if (type.array(permission.capabilities))    permission.capabilities = new Set(permission.capabilities);
-                    if (type.array(permission.roles))           permission.roles        = new Set(permission.roles);
-                    if (type.object(permission.data))           permission.data         = this.mapify(permission.data);
-
-
-                    if (!type.set(permission.capabilities)) throw new Error(`Permissions: expected a set on the capability property, got ${type(permission.capabilities)}!`);
-                    if (!type.map(permission.data)) throw new Error(`Permissions: expected a map on the data property, got ${type(permission.data)}!`);
-                    if (!type.set(permission.roles)) throw new Error(`Permissions: expected a set on the roles property, got ${type(permission.roles)}!`);
-                });
-            }
-
+            // the permissions a received from the
+            // permission service
             this.permissions = permissions || [];
-            if (!options.isChild) this.instanceCache = new Map();
-            this.isChild = !!options.isChild;
 
-            // hidden
-            Object.defineProperty(this, 'manager', {value: options.manager});
-
-            // check it the action is allowed
-            this.actionIsAllowed = this.permissions.some((permissions) => {
-                return permissions.permissions.some((permission) => {
-                    return permission.action === this.actionName &&
-                        permission.service === this.serviceName &&
-                        permission.resource === this.resourceName &&
-                        permission.allowed;
-                });
-            });
+            // the type if this is a subset of the permissions
+            // filtered by subject type
+            this.type = type || 'root';
 
 
-            // cache roles
-            this._roles = new Set();
-
-            for (const permission of this.permissions) {
-                for (const role of permission.roles) this._roles.add(role);
-            }
+            // cache the question if a certain action is allowef
+            this.allowedCache = new Map();
 
 
-            // those objects get shared betweenaction calls, dont ever
+
+            // cahce instances
+            this.instanceCache = new Map();
+
+
+            // those objects get shared between action calls, dont ever
             // let them be modified!
             Object.freeze(this);
         }
@@ -77,7 +62,10 @@
 
 
 
-
+        /**
+         * returns all the tokens that are part 
+         * of this permission configuration
+         */
         getTokens() {
             return this.permissions.map(p => p.token);
         }
@@ -87,7 +75,7 @@
 
 
 
-
+/*
 
 
         getRestrictions() {
@@ -105,9 +93,9 @@
         }
 
 
+*/
 
-
-
+/*
         mapify(input) {
             if (type.object(input)) {
                 const map = new Map();
@@ -118,48 +106,42 @@
             } else return input;
         }
 
+*/
 
-
-
-
+    
+        
+        /**
+         * filter the set of permissions by the user type
+         */
         users(id) {
-            if (this.isChild) throw new Error(`Cannot get users from permissions, you're already working on a user set!`);
+            if (this.type !== 'root') throw new Error(`Cannot get users from permissions, you're already working on a user set!`);
 
             const cacheId = `user:${(id || '[all]')}`;
 
             if (!this.instanceCache.has(cacheId)) {
-                const instance = new PermissionInstance({
-                    permissions: this.permissions.filter((p) => {
-                        return p.type === 'user' && (type.undefined(id) || p.id == id);
-                    })
-                    , isChild: true
-                    , manager: this.manager
-                    , serviceName: this.serviceName
-                    , resourceName: this.resourceName
-                    , actionName: this.actionName
-                });
+                const instance = new PermissionInstance(this.permissions.filter((p) => {
+                    return p.subject.type === 'user' && (type.undefined(id) || p.subject.id == id);
+                }), 'user');
 
                 this.instanceCache.set(cacheId, instance);
             }
+
             return this.instanceCache.get(cacheId);
         }
 
 
+        
+        /**
+         * filter the set of permissions by the service type
+         */
         services(id) {
-            if (this.isChild) throw new Error(`Cannot get services from permissions, you're already working on a user service!`);
+            if (this.type !== 'root') throw new Error(`Cannot get services from permissions, you're already working on a user service!`);
             const cacheId = `service:${(id || '[all]')}`;
 
             if (!this.instanceCache.has(cacheId)) {
-                const instance = new PermissionInstance({
-                    permissions: this.permissions.filter((p) => {
-                        return p.type === 'service' && (type.undefined(id) || p.id == id);
-                    })
-                    , isChild: true
-                    , manager: this.manager
-                    , serviceName: this.serviceName
-                    , resourceName: this.resourceName
-                    , actionName: this.actionName
-                });
+                const instance = new PermissionInstance(this.permissions.filter((p) => {
+                    return p.subject.type === 'service' && (type.undefined(id) || p.id == id);
+                }), 'service');
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -168,21 +150,18 @@
         }
 
 
+        
+        /**
+         * filter the set of permissions by the app type
+         */
         apps(id) {
-            if (this.isChild) throw new Error(`Cannot get apps from permissions, you're already working on a app set!`);
+            if (this.type !== 'root') throw new Error(`Cannot get apps from permissions, you're already working on a app set!`);
             const cacheId = `app:${(id || '[all]')}`;
 
             if (!this.instanceCache.has(cacheId)) {
-                const instance = new PermissionInstance({
-                    permissions: this.permissions.filter((p) => {
-                        return p.type === 'app' && (type.undefined(id) || p.id == id);
-                    })
-                    , isChild: true
-                    , manager: this.manager
-                    , serviceName: this.serviceName
-                    , resourceName: this.resourceName
-                    , actionName: this.actionName
-                });
+                const instance = new PermissionInstance(this.permissions.filter((p) => {
+                    return p.subject.type === 'app' && (type.undefined(id) || p.id == id);
+                }), 'app');
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -191,21 +170,19 @@
         }
 
 
+
+        
+        /**
+         * filter the set of permissions by the external type
+         */
         external() {
-            if (this.isChild) throw new Error(`Cannot get external from permissions, you're already working on an external set!`);
+            if (this.type !== 'root') throw new Error(`Cannot get external from permissions, you're already working on an external set!`);
             const cacheId = `external:[all]`;
 
             if (!this.instanceCache.has(cacheId)) {
-                const instance = new PermissionInstance({
-                    permissions: this.permissions.filter((p) => {
-                        return p.type === 'app' || p.type === 'user';
-                    })
-                    , isChild: true
-                    , manager: this.manager
-                    , serviceName: this.serviceName
-                    , resourceName: this.resourceName
-                    , actionName: this.actionName
-                });
+                const instance = new PermissionInstance(this.permissions.filter((p) => {
+                    return p.subject.type === 'app' || p.subject.type === 'user';
+                }), 'external');
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -214,14 +191,18 @@
         }
 
 
+        
+        /**
+         * filter the set of permissions by the token type
+         */
         token(token) {
-            if (this.isChild) throw new Error(`Cannot get token from permissions, you're already working on a token set!`);
+            if (this.type !== 'root') throw new Error(`Cannot get token from permissions, you're already working on a token set!`);
             const cacheId = `token:${token}`;
 
             if (!this.instanceCache.has(cacheId)) {
                 const instance = new PermissionInstance(this.permissions.filter((p) => {
                     return p.token === token;
-                }), true, this.manager);
+                }), 'token');
 
                 this.instanceCache.set(cacheId, instance);
             }
@@ -234,11 +215,11 @@
 
 
         hasApp() {
-            return this.permissions.some(p => p.type === 'app');
+            return this.permissions.some(p => p.subject.type === 'app');
         }
 
         isApp() {
-            return !this.permissions.some(p => p.type !== 'app');
+            return !this.permissions.some(p => p.subject.type !== 'app');
         }
 
 
@@ -246,11 +227,11 @@
 
 
         hasService() {
-            return this.permissions.some(p => p.type === 'service');
+            return this.permissions.some(p => p.subject.type === 'service');
         }
 
         isService() {
-            return !this.permissions.some(p => p.type !== 'service');
+            return !this.permissions.some(p => p.subject.type !== 'service');
         }
 
 
@@ -258,11 +239,11 @@
 
 
         hasUser() {
-            return this.permissions.some(p => p.type === 'user');
+            return this.permissions.some(p => p.subject.type === 'user');
         }
 
         isUser() {
-            return !this.permissions.some(p => p.type !== 'user');
+            return !this.permissions.some(p => p.subject.type !== 'user');
         }
 
 
@@ -280,36 +261,42 @@
 
 
 
+        /**
+         * checks if a certain action is allowed
+         */
+        isActionAllowed(service, resource, actionName) {
 
-        isActionAllowed(actionName) {
-            if (this.resourceName === 'authorization' && this.actionName === 'listOne' && this.serviceName === 'permissions') return true;
-            if (this.resourceName === 'serviceInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
-            if (this.resourceName === 'appInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
-            if (this.resourceName === 'userInfo' && this.actionName === 'listOne' && this.serviceName === 'user') return true;
+            // we need all the information for making the decisions
+            if (!type.string(service) || !service.length) return false;
+            if (!type.string(resource) || !resource.length) return false;
+            if (!type.string(actionName) || !actionName.length) return false;
+
+            // whitelist some endpoints
+            if (resource === 'authorization' && actionName === 'listOne' && service === 'permissions') return true;
+            if (resource === 'serviceInfo' && actionName === 'listOne' && service === 'user') return true;
+            if (resource === 'appInfo' && actionName === 'listOne' && service === 'user') return true;
+            if (resource === 'userInfo' && actionName === 'listOne' && service === 'user') return true;
+
+
+            const cacheId = `${service}/${resource}:${actionName}`;
+
+
+            // action specific permissions
+            if (allowAll) return true;
+            else if (this.allowedCache.has(cacheId) && this.allowedCache.get(cacheId)) return true;
             else {
-                if (actionName) {
-
-                    // action specific permissions
-                    return this.permissions.some((permissions) => {
-                        return permissions.permissions.some((permission) => {
-                            return permission.action === actionName &&
-                                permission.service === this.serviceName &&
-                                permission.resource === this.resourceName &&
-                                permission.allowed;
+                const isAllowed = this.permissions.some((permission) => {
+                    return permission.roles && permission.roles.some((role) => {
+                        return role.permissions && role.permissions.some((p) => {
+                            return p.service === service && p.resource === resource && p.action === actionName;
                         });
-                    }) || allowAll;
-                } else {
+                    });
+                });
 
-                    // default action this instance was loaded for
-                    if (this.actionIsAllowed) return true;
-                    else {
+                // cache for later use
+                this.allowedCache.set(cacheId, isAllowed);
 
-                        // check if we're learning
-                        if (learningSession) this.manager.learn(this.serviceName, this.resourceName, this.actionName, Array.from(this.getRoles()));
-
-                        return allowAll ? true : false;
-                    }
-                }
+                return isAllowed;
             }
         }
 
@@ -356,15 +343,16 @@
 
 
         hasRole(roleName) {
-            for (const permission of this.permissions) {
-                if (permission.roles.has(roleName)) return true;
-            }
-
-            return false;
+            return this.permissions.some(p => p.roles && p.roles.some(r => r.identifier === roleName));
         }
 
         getRoles() {
-            return this._roles;
+            const roles = new Set();
+                
+            // get all roles
+            this.permissions.forEach(p => p.roles && p.roles.forEach(r => roles.add(r.identifier)));
+
+            return roles;
         }
 
 
@@ -374,19 +362,14 @@
 
 
         hasCapability(name) {
-            for (const permission of this.permissions) {
-                if (permission.capabilities.has(name)) return true;
-            }
-
-            return false;
+            return this.permissions.some(p => p.roles && p.roles.some(r => r.capabilities && r.capabilities.some(c => c === name)));
         }
 
         getCapabilities() {
             const capabilities = new Set();
 
-            for (const permission of this.permissions) {
-                for (const capability of permission.capabilities) capabilities.add(capability);
-            }
+            // get all capabilities
+            this.permissions.forEach(p => p.roles && p.roles.forEach(r => r.capabilities && r.capabilities.forEach(c => capabilities.add(c))));
 
             return capabilities;
         }
@@ -404,7 +387,7 @@
 
         getValue(valueName) {
             for (const permission of this.permissions) {
-                if (permission.data.has(valueName)) return permission.data.get(valueName);
+                if (hasProperty(permission.subject.data, valueName)) return permission.subject.data[valueName];
             }
 
             return undefined;
@@ -414,7 +397,7 @@
             const values = new Set();
 
             for (const permission of this.permissions) {
-                if (permission.data.has(valueName)) values.add(permission.data.get(valueName));
+                if (hasProperty(permission.subject.data, valueName)) values.add(permission.subject.data[valueName]);
             }
 
             return values;
@@ -425,7 +408,15 @@
             const values = new Set();
 
             for (const permission of this.permissions) {
-                if (permission.data.size) values.add(permission.data);
+                if (hasData(permission.subject.data)) {
+                    const map = new Map();
+
+                    Object.keys(permission.subject.data).forEach((key) => {
+                        map.set(key, permission.subject.data[key]);
+                    });
+
+                    values.add(map);
+                }
             }
 
             return values;
@@ -435,10 +426,10 @@
             const values = new Map();
 
             for (const permission of this.permissions) {
-                if (permission.data.size) {
-                    for (const key of permission.data.keys()) {
-                        values.set(key, permission.data.get(key));
-                    }
+                if (hasData(permission.subject.data)) {
+                    Object.keys(permission.subject.data).forEach((key) => {
+                        values.set(key, permission.subject.data[key]);
+                    });
                 }
             }
 

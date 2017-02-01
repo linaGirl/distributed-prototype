@@ -856,14 +856,15 @@
 
 
 
-        removeReferenceIds(data, requestingResource) {
-            if (type.array(data)) data.forEach((d) => this.removeReferenceIds(d, requestingResource));
+        removeReferenceIds(data, requestingResource, selection) {
+            if (type.array(data)) data.forEach((d) => this.removeReferenceIds(d, requestingResource, selection));
             else if (type.object(data)) {
                 Object.keys(data).forEach((key) => {
                     if (this.referencingKeys.has(key)) {
+                        
                         // dont delete keys that are required by the requester, they
                         // will delete it tehemselves. dont remove primaries
-                        if (this.referencingKeys.get(key) !== requestingResource && !this.definition.properties.get(key).isPrimary) delete data[key];
+                        if (this.referencingKeys.get(key) !== requestingResource && !this.definition.properties.get(key).isPrimary && (!selection || !selection.includes(key))) delete data[key];
                     }
                 });
             }

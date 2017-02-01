@@ -65,5 +65,23 @@
             };
             this.send();
         }
+
+
+
+        /**
+         * creates a proper error for each status
+         */
+        toError() {
+            switch (this.status) {
+                case 'seeOther':
+                case 'accepted':
+                case 'noContent':
+                case 'created':
+                    return new Error(`Canont create Error from response since the response has the status ${this.status} which ois not an error!`);
+
+                default:
+                    return super.toError();
+            }
+        }
     };
 })();

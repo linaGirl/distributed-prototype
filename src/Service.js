@@ -248,6 +248,14 @@
             }// else log.warn('not adding token', this.getName());
 
 
+            
+            if (debug) {
+                log.debug(`[Distributed] Outgoing request to ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action}...`);
+                response.onAfterSend = () => {
+                    log.info(`[Distributed] Incoming response from ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} with the status ${response.status}...`);
+                };
+            }
+
             // internal or external handling?
             if (request.getService() === this.name) this.receiveRequest(request, response);
             else if (!this.hasHooks('request')) response.error('no_listeners', `Cannot send outgoing request, no one is listening on the request hook of the ${this.name} service!`);
@@ -273,19 +281,23 @@
 
             if (debug) {
                 const id = ++requestId;
+                const start = Date.now();
 
-                const timeout = setTimeout(() => {
-                    log.warn(`[${id}] Long running request on ${request.action} ${request.service}/${request.resource}!`);
+                const timeout = setInterval(() => {
+                    log.warn(`[${id}] Long running request on ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action}!`);
                 }, 1000);
 
+
+                log.info(`[Distributed][${id}] Incoming request to ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} ...`);
                 response.onAfterSend = () => {
-                    clearTimeout(timeout);
-                }
+                    log.success(`[Distributed][${id}] Outgoing response from ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} with the status ${response.status}${type.array(response.data) ? ` and ${response.data.length} records` : '' } after ${Date.now()-start} ms...`);
+                    clearInterval(timeout);
+                };
             }
 
             // check permissions
-            this.permissions.getActionPermissions(request).then((permissions) => {
-                if (permissions.isActionAllowed()) {
+            this.permissions.getPermissions(request.tokens).then((permissions) => {
+                if (permissions.isActionAllowed(request.service, request.resource, request.action)) {
                     if (!this.loaded) response.serviceUnavailable('service_not_loaded', `The service was not yet loaded completely. Try again later!`)
                     else {
                         if (this.resources.has(request.resource)) {
@@ -293,7 +305,7 @@
                         } else response.notFound(`The resource ${request.resource} does not exist on the ${this.getName()} service!`);
                     }
                 } else response.authorizationRequired(request.resource, request.action);
-            }).catch(err => response.error('permissions_error', `Failed to load permissions while processing the request on the service ${this.name} and the resource ${request.resource} with the action ${request.action}!`, err));
+            }).catch(err => log(err)); //response.error('permissions_error', `Failed to load permissions while processing the request on the service ${this.name} and the resource ${request.resource} with the action ${request.action}!`, err));
         }
 
 

@@ -172,7 +172,6 @@
 
 
 
-
                     switch (status) {
                         case 1:     return response.ok(data);
                         case 2:     return response.created(data.id);
@@ -193,8 +192,8 @@
                             if (rlHeader && rlHeader.length) limits = /(\d+)\/(\d+)s/.exec(rlHeader);
 
                             return response.tooManyRequests(limits ? parseInt(limits[2], 10) : 60, limits ? parseInt(limits[1], 10) : 0, parseInt(rlLeft ? rlLeft+'' : 0, 10));
-                        case 38: return response.error('legacy_error', `The legacy layer returned an error!`, data.err);
-                        default: return response.error('legacy_error', `The legacy layer returned an unknown status ${status}!`, data.err);
+                        case 37: return response.error('legacy_error', `The legacy layer returned an error (${methodMap.get(request.action)} on ${url}${request.requestingService ? ` issued by the ${request.requestingService} service` : ''})!`, (data.err || new Error(data.msg)));
+                        default: return response.error('legacy_error', `The legacy layer returned an unknown status ${status}!`, (data.err || new Error(data.msg)));
                     }
                 });
 
@@ -368,7 +367,7 @@
                 }
 
 
-                process.nextTick(() => {
+                process.nextTick(() => { //log.warn(`${request.action} ${request.service}/${request.resource}: ${statusCodeMap.get(response.status)}`);
                     legacyResponse.send(statusCodeMap.get(response.status), errorData || response.data);
                 });
             };

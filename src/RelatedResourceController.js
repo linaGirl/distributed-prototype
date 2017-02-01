@@ -375,7 +375,7 @@
 
 
                         // remove ids for references
-                        this.removeReferenceIds(data, request.requestingResource);
+                        this.removeReferenceIds(data, request.requestingResource, request.selection);
 
                         // k, there you go!
                         response.ok(data);
@@ -504,7 +504,7 @@
 
                 return Promise.resolve();
             }
-            else return Promise.reject(`Cannot autoload related controller ${this.tableName}. It does not exist in the database!`);
+            else return Promise.reject(`Cannot autoload related controller ${this.getName()} on the table ${this.tableName}. It does not exist in the database!`);
         }
 
 
