@@ -23,29 +23,26 @@
 
 
 
-        setService(service) {
-            this.serviceName = service;
-        }
-
-
-        setPermissionManager(permissions) {
-            this.permissions = permissions;
-        }
-
-
-        enableAction(actionName) {
-            this.actionRegistry.add(actionName);
-        }
-
-
-        getName() {
-            return this.name;
+        setServiceName(serviceName) {
+            this.serviceName = serviceName;
         }
 
         getServiceName() {
             return this.serviceName;
         }
 
+
+
+
+        getName() {
+            return this.name;
+        }
+
+
+
+        enableAction(actionName) {
+            this.actionRegistry.add(actionName);
+        }
 
 
 

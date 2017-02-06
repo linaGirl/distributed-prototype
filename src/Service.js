@@ -5,7 +5,6 @@
     const Hook = require('./Hook');
     const type = require('ee-types');
     const log = require('ee-log');
-    const PermissionManager = require('./PermissionManager');
     const debug = process.argv.includes('--debug-service') || process.env.debugService;
 
 
@@ -40,8 +39,8 @@
             // resource controller storage
             this.resources = new Map();
 
-            // all services have permisisons support
-            this.permissions = new PermissionManager(this);
+            // middlewares
+            this.middlewares = [];
         }
 
 
@@ -131,8 +130,7 @@
             resource.onRequest = (request, response) => this.sendRequest(request, response);
 
             // pass the resource some needed information
-            resource.setService(this.name);
-            resource.setPermissionManager(this.permissions);
+            resource.setServiceName(this.name);
 
             // trigger the load method on the resource
             // if the service has finished loading
@@ -202,12 +200,12 @@
 
 
         /**
-         * does the actuak loading
+         * load all middleware, load the controllers
          */
         executeLoad() {
-            return this.permissions.load().then((token) => {
-                this.token = token;
-
+            return Promise.all(this.middlewares.map((middleware) => {
+                return middleware.load(this);
+            })).then(() => {
 
                 // dont accept new resource ocntrollers anymore
                 this.lockControllerRegistration = true;
@@ -224,6 +222,19 @@
 
 
 
+        /**
+        * sets the token of this service
+        * so that ourgoing requests are authenticated
+        * as request originating from this service
+        */
+        setToken(token) {
+            this.token = token;
+        }
+
+
+
+
+
 
         loadResourceControllers() {
             if (!this.resources.size) return Promise.resolve();
@@ -234,8 +245,27 @@
 
 
 
+        /**
+        * returns a gateway obejct the can be used to send requests
+        */
+        createGateway() {
+            return {
+                sendRequest: (request, response) => {
+                    this.sendRequest(request, response);
+                }
+
+                , getName: () => {
+                    return this.getName();
+                }
+            };
+        }
 
 
+
+
+        /**
+         * used for outgoind requests
+         */
         sendRequest(request, response) {
 
             // attach sender service
@@ -295,18 +325,60 @@
                 };
             }
 
-            // check permissions
-            this.permissions.getPermissions(request.tokens).then((permissions) => {
-                if (permissions.isActionAllowed(request.service, request.resource, request.action)) {
-                    if (!this.loaded) response.serviceUnavailable('service_not_loaded', `The service was not yet loaded completely. Try again later!`)
-                    else {
+
+
+            // make sure there is no injected code
+            request.clearTrustedModules();
+
+
+            // check if we're redy to process requests
+            if (!this.loaded) response.serviceUnavailable('service_not_loaded', `The service ${this.getName()} was not yet loaded completely. Try again later!`);
+            else {
+
+                // handle middlewares
+                this.processMiddleWares(request, response).then((halt) => {
+                    
+                    // if halt is true the response is handled
+                    // by a middleware
+                    if (!halt) {
                         if (this.resources.has(request.resource)) {
-                            this.resources.get(request.resource).receiveRequest(request, response, permissions);
+                            this.resources.get(request.resource).receiveRequest(request, response);
                         } else response.notFound(`The resource ${request.resource} does not exist on the ${this.getName()} service!`);
                     }
-                } else response.authorizationRequired(request.resource, request.action);
-            }).catch(err => log(err)); //response.error('permissions_error', `Failed to load permissions while processing the request on the service ${this.name} and the resource ${request.resource} with the action ${request.action}!`, err));
+                }).catch(err => response.error('middleware_error', `Failed to process request on the middlewares!`, err));
+            }
         }
+
+
+
+
+
+
+
+        processMiddleWares(request, response, index = 0) {
+             if (this.middlewares.length > index) {
+                return this.middlewares[index].processRequest(request, response).then((halt) => {
+                    if (halt) return Promise.resolve(true);
+                    else return this.processMiddleWares(request, response, index+1);
+                });
+            } else return Promise.resolve();
+        }
+
+
+
+
+
+
+
+
+        /**
+        * user defined middlewares for incoming requests
+        */
+        use(middleware) {
+
+            this.middlewares.push(middleware);
+        }
+
 
 
 

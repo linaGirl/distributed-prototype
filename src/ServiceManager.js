@@ -64,6 +64,15 @@
 
 
 
+        /**
+        * returns an array containing all services
+        */
+        getServices() {
+            return Array.from(this.services.values());
+        }
+
+
+
 
         removeService(service) {
             const name = typeof service === 'object' ? service.getName() : service;

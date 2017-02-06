@@ -114,7 +114,7 @@
                 else range = `${request.offset}-${request.offset+100}`;
             } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
 
-
+//log(this.convertToLegacyFilter(request.filter))
 
             return new this.RPCRequest({
                   filter        : this.convertToLegacyFilter(request.filter)
@@ -126,7 +126,7 @@
                 , range         : range
                 , order         : (request.order || []).join(', ')
                 , accessTokens  : request.tokens
-            }).convert().then((result) => { //log(result.request);
+            }).convert().then((result) => {// log(result);
 
 
 
@@ -257,20 +257,16 @@
                     case 'root':
                         if (filter.children.length >= 1) {
                             const andChildren = [];
-                            for (const child of filter.children) {
-                                andChildren.push(this.convertToLegacyFilter(child));
-                            }
+                            filter.children.forEach(child => andChildren.push(this.convertToLegacyFilter(child)));
                             return andChildren.join(', ');
                         }
                         else return null;
 
 
                     case 'entity':
-                        if (filter.children.length > 1) {
+                        if (filter.children.length >= 1) {
                             const children = [];
-                            for (const child of filter.children) {
-                                children.push(`${filter.entityName}.${this.convertToLegacyFilter(child)}`);
-                            }
+                            filter.children.forEach(child => children.push(`${filter.entityName}.${this.convertToLegacyFilter(child)}`));
                             return children.join(', ');
                         }
                         else return null;
@@ -298,7 +294,7 @@
 
 
                     case 'value':
-                        return filter.nodeValue+'';
+                        return isNaN(filter.nodeValue+'') ? `'${filter.nodeValue}'` : filter.nodeValue+'';
                 }
             }
         }

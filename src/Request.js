@@ -149,9 +149,47 @@
 
 
 
+        /**
+        * stores a trusted module, which is one that is added 
+        * the local service
+        */
+        setTrustedModule(name, module) {
+            if (!this.trustedModules) this.trustedModules = new Map();
+            this.trustedModules.set(name, module);
+        }
+
+        /**
+        * checks if a trusted modules is present
+        */
+        hasTrustedModule(name) {
+            return this.trustedModules && this.trustedModules.has(name)
+        }
+
+        /**
+        * retuns a given trusted module
+        */
+        getTrustedModule(name) {
+            return this.hasTrustedModule(name) ? this.trustedModules.get(name) : null;
+        }
+
+        /**
+        * removes all trusted modules
+        */
+        clearTrustedModules() {
+            if (this.trustedModules) this.trustedModules = new Map();
+        }
 
 
-        send(receiver) {
+
+
+
+
+        /**
+        * sends the request using the passed gatewa
+        * and creates and returns the response as soon it 
+        * was sent by the other side
+        */
+        send(gateway) {
             const response = this.createResponse();
 
             // validate outgoing requests, repond
@@ -172,7 +210,7 @@
 
 
             process.nextTick(() => {
-                receiver.sendRequest(this, response);
+                gateway.sendRequest(this, response);
             });
 
             return new Promise((resolve, reject) => {

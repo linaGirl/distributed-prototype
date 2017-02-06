@@ -139,10 +139,10 @@
                     return new Error(this.formatErrorMessage(this.message));
 
                 case 'error':
-                    return new Error(this.formatErrorMessage(`${this.message}${this.err ? ` :${this.err.message}` : ''}`));
+                    return new Error(this.formatErrorMessage(`${this.message}${this.err ? `: ${this.err.message}` : ''}`));
 
                 case 'ok':
-                    return new Error(`Canont create Error from response since the response has the status ${this.status} which ois not an error!`);
+                    return new Error(`Canont create Error from response since the response has the status ${this.status} which is not an error!`);
 
                 case undefined:
                 case null:

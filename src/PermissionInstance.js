@@ -48,6 +48,9 @@
             this.allowedCache = new Map();
 
 
+            // cache row restrictions stuff
+            this.restrictionsCache = new Map();
+            this.restrictionsAvailabilityCache = new Map();
 
             // cahce instances
             this.instanceCache = new Map();
@@ -441,25 +444,56 @@
 
 
 
-        hasRowRestrictions() {
-            return this.permissions.some(p => p.restrictions && p.restrictions.length);
+        hasRowRestrictions(actionName) {
+            if (!actionName) {
+                log(new Error(`Call on hasRowRestrictions without an actionName!`));
+            }
+
+            if (this.restrictionsAvailabilityCache.has(actionName)) return this.restrictionsAvailabilityCache.get(actionName);
+            else {
+                this.restrictionsAvailabilityCache.set(actionName, this.permissions.some(p => p.roles.some(role => role.restrictions.some((res) => {
+                    return res.actions.includes(actionName);
+                }))));
+
+                return this.restrictionsAvailabilityCache.get(actionName);
+            }
         }
 
 
 
 
-        getRowRestrictions() {
-            const restrictions = [];
+        getRowRestrictions(actionName) {
+            if (this.hasRowRestrictions(actionName)) {
+                if (this.restrictionsCache.has(actionName)) return this.restrictionsCache.get(actionName);
+                else {
+                    const restrictions = [];
 
-            for (const permission of this.permissions) {
-                if (permission.restrictions) {
-                    for (const restriction of permission.restrictions) {
-                        restrictions.push(restriction);
+                    for (const permission of this.permissions) {
+                        for (const role of permission.roles) {
+                            if (role.restrictions) {
+                                for (const restriction of role.restrictions) {
+                                    if (restriction.actions.includes(actionName)) {
+                                        restrictions.push({
+                                              name      : restriction.name
+                                            , global    : restriction.global
+                                            , nullable  : restriction.nullable
+                                            , value     : restriction.value
+                                            , property  : restriction.property
+                                            , comparator: restriction.comparator
+                                            , valueType : restriction.valueType
+                                            , resources : restriction.resources.map(r => r.identifier)
+                                        });
+                                    }
+                                    
+                                }
+                            }
+                        }
                     }
-                }
-            }
 
-            return restrictions;
+                    this.restrictionsCache.set(actionName, restrictions);
+                    return this.restrictionsCache.get(actionName);
+                }
+            } else return [];
         }
     }
 })();

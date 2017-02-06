@@ -90,8 +90,8 @@
         /**
          * return the express middleware
          */
-        express() {
-            return this.route.bind(this);
+        express(app) {
+            app.use(this.route.bind(this));
         }
 
 

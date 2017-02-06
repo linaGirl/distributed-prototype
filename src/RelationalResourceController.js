@@ -89,7 +89,7 @@
 
 
 
-        createOne(request, response, permissions) {
+        createOne(request, response) {
             request.data = [request.data];
 
             // remove array on the response
@@ -97,7 +97,7 @@
                 if (response.data && type.array(response.data.id)) response.data.id = response.data.id[0];
             };
 
-            return this.create(request, response, permissions);
+            return this.create(request, response);
         }
 
 
@@ -106,7 +106,7 @@
 
 
 
-        deleteOne(request, response, permissions) {
+        deleteOne(request, response) {
             if (!this.definition.hasPrimaryId()) return response.error('no_primary_id', `the resource has no or multiple primary ids and can only be deleted using the delete action!`);
             else {
 
@@ -119,7 +119,7 @@
                 request.limit = 1;
 
 
-                return this.delete(request, response, permissions);
+                return this.delete(request, response);
             }
         }
 
@@ -142,7 +142,7 @@
 
 
 
-        updateOne(request, response, permissions) {
+        updateOne(request, response) {
             if (!this.definition.hasPrimaryId()) return response.error('no_primary_id', `the resource has no or multiple primary ids and can only be deleted using the update action!`);
             else {
 
@@ -159,7 +159,7 @@
                 request.limit = 1;
 
 
-                return this.update(request, response, permissions);
+                return this.update(request, response);
             }
         }
 
@@ -181,7 +181,7 @@
 
 
 
-        listOne(request, response, permissions) {
+        listOne(request, response) {
             if (!this.definition.hasPrimaryId()) return response.error('no_primary_id', `the resource has no or multiple primary ids and can only be fetched using the list action!`);
             else {
 
@@ -202,7 +202,7 @@
                 // get no more than one
                 request.limit = 1;
 
-                return this.list(request, response, permissions);
+                return this.list(request, response);
             }
         }
 
@@ -262,7 +262,7 @@
                                 }, 500);
                             });
                         }
-                        else return Promise.reject(new Error(`The registration of the remote relation ${definition.name} failed with the status ${response.status}: ${response.message}`));
+                        else return Promise.reject(response.toError());
                     });
                 }
             };
@@ -278,7 +278,7 @@
 
 
 
-        describe(request, response, permissions) {
+        describe(request, response) {
             const data = {};
 
             // basics
@@ -303,19 +303,20 @@
             }
 
 
-            // permissions for all of the resource
-            this.permissions.getPermissions(request.tokens, this.getServiceName(), this.getName(), null, request).then((permissions) => {
-
-                // set permissions on local entity
-                for (const action of this.actionRegistry) {
-                    data.permissions[action] = permissions.isActionAllowed(action);
-                }
+            const permissions = request.getTrustedModule('permissions');
 
 
+            // set permissions on local entity
+            for (const action of this.actionRegistry) {
+                data.permissions[action] = permissions.isActionAllowed(this.getServiceName(), this.getName(), action);
+            }
 
-                // add has one relation definitions
-                if (request.hasOption('withoutRelations')) return Promise.resolve();
-                else return Promise.all(Array.from(this.relations.values()).map((service) => {
+
+
+            // add has one relation definitions
+            if (request.hasOption('withoutRelations')) return Promise.resolve();
+            else {
+                return Promise.all(Array.from(this.relations.values()).map((service) => {
                     return Promise.all(Array.from(service.values()).map((relation) => {
                         const definition = {
                               type: relation.type === 'mapping' ? 'hasManyAndBelongsToMany' : (relation.type === 'belongsTo' ? 'hasMany' : 'hasOne')
@@ -431,10 +432,10 @@
                         }
                         else  throw new Error(`Unknown relation ${relation.type}!`);
                     }));
-                }));
-            }).then(() => {
-                response.ok(data);
-            }).catch(err => response.error('permissions_error', `Failed to load permissions!`, err));
+                })).then(() => {
+                    response.ok(data);
+                }).catch(err => response.error('permissions_error', `Failed to load permissions!`, err));
+            }
         }
 
 
@@ -654,7 +655,10 @@
                 if ((!parentResourceName || parentResourceName === resourceName) && parentPropertyName === propertyName && (filter.type === 'function' || filter.type === 'comparator')) {
                     //log.warn(filter.type, filter.children.length, resourceName, propertyName, parentResourceName, parentPropertyName);
                     if (filter.type === 'function') return filter.children.map(item => item.nodeValue);
-                    else return filter.children[0].nodeValue;
+                    else {
+                        if (filter.children[0].type === 'function') return filter.children[0].children.map(item => item.nodeValue);
+                        else return filter.children[0].nodeValue;
+                    }
                 } else {
                     const results = filter.children.map(child => this.getFilterValue(child, resourceName, propertyName, filterName, parentResourceName, parentPropertyName)).filter(v => !!v);
 
