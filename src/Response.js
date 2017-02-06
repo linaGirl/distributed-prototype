@@ -16,6 +16,34 @@
     module.exports = class Response extends Hook {
 
 
+
+        constructor() {
+            super();
+
+            // let the user send metadata on the response
+            this.meta = new Map();
+        }
+
+
+
+        setMetaData(ḱey, value) {
+            this.meta.set(key, value);
+        }
+
+        getMetaData(key) {
+            if (key !== undefined) return this.meta.get(key);
+            else return this.meta;
+        }
+
+        clearMeta() {
+            this.meta.clear();
+        }
+
+
+
+
+
+
         ok(data) {
             this.data = data;
             this.status = 'ok';

@@ -638,7 +638,7 @@
             }).send(this).then((response) => {
                 if (response.status === 'ok') {
                     return Promise.resolve(response.data);
-                } else return Promise.reject(new Error(`expected status ok, got ${response.status} instead!`));
+                } else return Promise.reject(response.toError());
             }).catch(err => Promise.reject(new Error(`Failed to load referenced relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
         }
 
