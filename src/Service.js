@@ -39,8 +39,13 @@
             // resource controller storage
             this.resources = new Map();
 
-            // middlewares
-            this.middlewares = [];
+            // middleware storage
+            this.incomingMiddlewares = [];
+            this.outgoingMidddlewares = [];
+
+            // storeg for tracking which middleware
+            // was loaded already
+            this.loadedMiddlewares = new Set();
         }
 
 
@@ -203,9 +208,21 @@
          * load all middleware, load the controllers
          */
         executeLoad() {
-            return Promise.all(this.middlewares.map((middleware) => {
-                return middleware.load(this);
+            return Promise.all(this.incomingMiddlewares.map((middleware) => {
+                if (this.loadedMiddlewares.has(middleware)) return Promise.resolve();
+                else {
+                    this.loadedMiddlewares.add(middleware);
+                    return middleware.load(this);
+                }
             })).then(() => {
+                return Promise.all(this.outgoingMidddlewares.map((middleware) => {
+                    if (this.loadedMiddlewares.has(middleware)) return Promise.resolve();
+                    else {
+                        this.loadedMiddlewares.add(middleware);
+                        return middleware.load(this);
+                    }
+                }));
+            }).then(() => {
 
                 // dont accept new resource ocntrollers anymore
                 this.lockControllerRegistration = true;
@@ -245,6 +262,10 @@
 
 
 
+
+
+
+
         /**
         * returns a gateway obejct the can be used to send requests
         */
@@ -263,8 +284,16 @@
 
 
 
+
+
+
+
+
+
         /**
-         * used for outgoind requests
+         * handles middlewares for outgoing requests, 
+         * routes them either to an internal target
+         * or diaptches it to the outside
          */
         sendRequest(request, response) {
 
@@ -272,10 +301,8 @@
             request.requestingService = this.name;
 
 
-            if (this.token)  {
-                if (!request.tokens) request.tokens = [];
-                request.tokens.push(this.token);
-            }// else log.warn('not adding token', this.getName());
+            // add my token on outgoing requests
+            if (this.token) request.setToken(this.token);
 
 
             
@@ -286,16 +313,37 @@
                 };
             }
 
-            // internal or external handling?
-            if (request.getService() === this.name) this.receiveRequest(request, response);
-            else if (!this.hasHooks('request')) response.error('no_listeners', `Cannot send outgoing request, no one is listening on the request hook of the ${this.name} service!`);
-            else return this.executeHook('request', request, response);
+
+
+
+            // process using middlewares
+            this.processOutgoingMiddleWares(request, response).then((halt) => {
+                
+                // if halt is true the response is handled
+                // by a middleware
+                if (!halt) {
+                    
+
+                    // internal or external handling?
+                    if (request.getService() === this.name) this.receiveRequest(request, response);
+                    else if (!this.hasHooks('request')) response.error('no_listeners', `Cannot send outgoing request, no one is listening on the request hook of the ${this.name} service!`);
+                    else return this.executeHook('request', request, response);
+                }
+            }).catch(err => response.error('middleware_error', `Failed to process request on the outgoing middlewares!`, err));
         }
 
 
 
 
 
+
+
+
+
+
+        /**
+        * incoming requests from the outside
+        */
         receiveRequest(request, response) {
             this.dispatchRequest(request, response);
         }
@@ -305,6 +353,15 @@
 
 
 
+
+
+
+
+
+        /**
+        * routes the request through the incoming middlewares,
+        * disptches them to the correct controller
+        */
         dispatchRequest(request, response) {
             response.serviceName = this.name;
 
@@ -336,7 +393,7 @@
             else {
 
                 // handle middlewares
-                this.processMiddleWares(request, response).then((halt) => {
+                this.processIncomingMiddleWares(request, response).then((halt) => {
                     
                     // if halt is true the response is handled
                     // by a middleware
@@ -345,7 +402,7 @@
                             this.resources.get(request.resource).receiveRequest(request, response);
                         } else response.notFound(`The resource ${request.resource} does not exist on the ${this.getName()} service!`);
                     }
-                }).catch(err => response.error('middleware_error', `Failed to process request on the middlewares!`, err));
+                }).catch(err => response.error('middleware_error', `Failed to process request on the incoming middlewares!`, err));
             }
         }
 
@@ -355,11 +412,16 @@
 
 
 
-        processMiddleWares(request, response, index = 0) {
-             if (this.middlewares.length > index) {
-                return this.middlewares[index].processRequest(request, response).then((halt) => {
+
+
+        /**
+        * execute outgoing midddlewares on the request
+        */
+        processOutgoingMiddleWares(request, response, index = 0) {
+             if (this.outgoingMidddlewares.length > index) {
+                return this.outgoingMidddlewares[index].processOutgoingRequest(request, response).then((halt) => {
                     if (halt) return Promise.resolve(true);
-                    else return this.processMiddleWares(request, response, index+1);
+                    else return this.processOutgoingMiddleWares(request, response, index+1);
                 });
             } else return Promise.resolve();
         }
@@ -372,11 +434,31 @@
 
 
         /**
+        * execute incoming midddlewares on the request
+        */
+        processIncomingMiddleWares(request, response, index = 0) {
+             if (this.incomingMiddlewares.length > index) {
+                return this.incomingMiddlewares[index].processIncomingRequest(request, response).then((halt) => {
+                    if (halt) return Promise.resolve(true);
+                    else return this.processIncomingMiddleWares(request, response, index+1);
+                });
+            } else return Promise.resolve();
+        }
+
+
+
+
+
+
+
+
+
+        /**
         * user defined middlewares for incoming requests
         */
         use(middleware) {
-
-            this.middlewares.push(middleware);
+            if (type.object(middleware) && middleware.hookIncomingRequests()) this.incomingMiddlewares.push(middleware);
+            if (type.object(middleware) && middleware.hookOutgoingRequests()) this.outgoingMidddlewares.push(middleware);
         }
 
 

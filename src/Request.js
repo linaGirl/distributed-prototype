@@ -19,8 +19,34 @@
                 if (options.tokens)     this.setTokens(options.tokens);
                 if (options.token)      this.setToken(options.token);
                 if (options.options)    this.setOptions(options.options);
+                if (options.origin)     this.setOrigin(options.origin);
             }
         }
+
+
+
+
+
+
+
+        /**
+        * stores the origin request on this request
+        */
+        setOrigin(request) {
+            this.originRequest = request;
+        }
+
+        getOrigin() {
+            return this.originRequest || null;
+        }
+
+        hasOrigin() {
+            return !!this.originRequest;
+        }
+
+
+
+
 
 
 
@@ -190,7 +216,7 @@
         * was sent by the other side
         */
         send(gateway) {
-            const response = this.createResponse();
+            this.response = this.createResponse();
 
             // validate outgoing requests, repond
             // directly on error!
@@ -199,24 +225,34 @@
             } catch (err) { log(err);
 
                 process.nextTick(() => {
-                    response.error('request_format_error', `The request could not be sent because it was malformed!`, err);
+                    this.response.error('request_format_error', `The request could not be sent because it was malformed!`, err);
                 });
 
                 return new Promise((resolve, reject) => {
-                    response.onAfterSend = () => resolve(response);
+                    this.response.onAfterSend = () => resolve(this.response);
                 });
             }
 
 
 
             process.nextTick(() => {
-                gateway.sendRequest(this, response);
+                gateway.sendRequest(this, this.response);
             });
 
             return new Promise((resolve, reject) => {
-                response.onAfterSend = () => resolve(response);
+                this.response.onAfterSend = () => resolve(this.response);
             });
         }
+
+
+        /**
+        * returns the response for the request
+        */
+        getResponse() {
+            return this.response;
+        }
+
+
 
 
 
@@ -229,6 +265,7 @@
         hasObjectData() {
             return type.object(this.data);
         }
+
 
 
 

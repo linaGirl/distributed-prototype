@@ -27,12 +27,16 @@
 
 
         setMetaData(ḱey, value) {
-            this.meta.set(key, value);
+            this.meta.set(ḱey, value);
         }
 
         getMetaData(key) {
             if (key !== undefined) return this.meta.get(key);
             else return this.meta;
+        }
+
+        hasMetaData(key) {
+            return this.meta.has(key);
         }
 
         clearMeta() {

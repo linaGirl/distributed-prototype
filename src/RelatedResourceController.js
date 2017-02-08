@@ -356,6 +356,12 @@
 
         list(request, response) {
 
+
+            // we need to select foreign keys if we're 
+            // loading references
+            this.prepareSelection(request);
+
+
             // create query, apply my filters
             const query = this.db[this.tableName](request.selection);
 

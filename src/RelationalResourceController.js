@@ -534,7 +534,7 @@
                 const selection = request.getRelationalSelection();
 
                 return Promise.all(Array.from(selection.keys()).map((relationalSelectionName) => {
-                    return this.loadRelationalSelection(records, selection.get(relationalSelectionName));
+                    return this.loadRelationalSelection(records, selection.get(relationalSelectionName), request);
                 })).then(() => Promise.resolve(records));
             } else return Promise.resolve();
         }
@@ -545,19 +545,19 @@
 
 
 
-        loadRelationalSelection(records, relationalSelection) {
+        loadRelationalSelection(records, relationalSelection, originRequest) {
             if (!this.hasRelation(relationalSelection.service, relationalSelection.resource)) return Promise.reject(new Error(`The relation ${relationalSelection.service}/${relationalSelection.resource} does not exist!`));
             else {
                 const relationDefinition = this.getRelation(relationalSelection.service, relationalSelection.resource);
 
 
                 if (relationDefinition.type === 'reference' || relationDefinition.type === 'belongsTo') {
-                    return this.loadRelationalRecords(relationDefinition, relationalSelection, records).then(((results) => {
+                    return this.loadRelationalRecords(relationDefinition, relationalSelection, records, originRequest).then(((results) => {
                         this.combineRemoteRecords(relationDefinition, records, results);
                         return Promise.resolve(records);
                     }));
                 }
-                else if (relationDefinition.type === 'mapping') return this.loadRelationalMapping(relationDefinition, relationalSelection, records);
+                else if (relationDefinition.type === 'mapping') return this.loadRelationalMapping(relationDefinition, relationalSelection, records, originRequest);
                 else return Promise.reject(`The relation ${relationDefinition.name} has an invalif type ${relationDefinition.type}!`);
             }
         }
@@ -568,7 +568,7 @@
 
 
 
-        loadRelationalMapping(relationDefinition, relationalSelection, records) {
+        loadRelationalMapping(relationDefinition, relationalSelection, records, originRequest) {
 
             // select the mapping table
             const selection = new RelationalSelection({
@@ -581,9 +581,9 @@
             selection.children.push(relationalSelection);
 
 
-            return this.loadRelationalRecords(this.getRelation(relationDefinition.via.service, relationDefinition.via.resource), selection, records).then((results) => {
+            return this.loadRelationalRecords(this.getRelation(relationDefinition.via.service, relationDefinition.via.resource), selection, records, originRequest).then((results) => {
 
-                // create a mpa for the input rtecords
+                // create a map for the input rtecords
                 const recordMap = new Map();
                 records.forEach(r => recordMap.set(r[relationDefinition.property], r));
 
@@ -610,7 +610,7 @@
 
 
 
-        loadRelationalRecords(relationDefinition, relationalSelection, records) {
+        loadRelationalRecords(relationDefinition, relationalSelection, records, originRequest) {
 
             // collect ids
             const ids = Array.from(new Set(type.object(records) ? [records[relationDefinition.property]] : records.map(r => r[relationDefinition.property]))).filter(id => id !== null);
@@ -624,23 +624,51 @@
             // add our filter
             filter.property(relationDefinition.remote.property).comparator('in').value(ids);
 
+            // make sure to select the filtered column
+            const selection = relationalSelection.selection.slice(0);
+            selection.push(relationDefinition.remote.property);
+
             // get the relation
             return new RelationalRequest({
                   resource              : relationDefinition.remote.resource
                 , service               : relationDefinition.remote.service
                 , filter                : filter
                 , service               : relationDefinition.remote.service
-                , selection             : relationalSelection.selection
+                , selection             : selection
                 , relationalSelection   : relationalSelection.getSubselectionMap()
                 , languages             : relationalSelection.languages
                 , tokens                : relationalSelection.tokens
                 , action                : 'list'
+                , origin                : originRequest
             }).send(this).then((response) => {
                 if (response.status === 'ok') {
                     return Promise.resolve(response.data);
                 } else return Promise.reject(response.toError());
             }).catch(err => Promise.reject(new Error(`Failed to load referenced relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
         }
+
+
+
+
+
+
+
+        /**
+        * make sure foreign keys are selected for references that must eb loaded
+        */
+        prepareSelection(request) {
+            if (request.relationalSelection) {
+                for (const relationalSelection of request.relationalSelection.values()) {
+                    const relationDefinition = this.getRelation(relationalSelection.service, relationalSelection.resource);
+
+                    if (relationDefinition && relationDefinition.type === 'reference') {
+                        request.selection.push(relationDefinition.property);
+                    }
+                }
+            }
+        }
+
+
 
 
 
@@ -696,6 +724,7 @@
 
 
         combineRemoteRecords(definition, localRecords, remoteRecords) {
+
             if (remoteRecords && remoteRecords.length) {
                 const map = new Map();
 

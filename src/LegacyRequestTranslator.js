@@ -183,7 +183,7 @@
                         case 23:    return response.badRequest('legacy_error', `The request was malformed!`);
                         case 24:    return response.forbidden('forbidden', `You are not allowed to access the resource!`);
                         case 25:    return response.authorizationRequired('unknown', result.reques.getAction());
-                        case 27:    return response.invalidAction(`The action ${result.reques.getAction()} was not implemetned on the resource!`);
+                        case 27:    return response.invalidAction(`The action ${result.request.getAction()} was not implemetned on the resource!`);
                         case 32:
                             const rlHeader = result.response.getHeader('Rate-Limit');
                             const rlLeft = result.response.getHeader('Rate-Limit-Balance');
@@ -332,6 +332,14 @@
                     if (response.err) log(err);
                 }
 
+
+                // pass the rate limit meta as headers to the outside
+                if (response.hasMetaData('rate-limit-interval')) legacyResponse.setHeader('Rate-Limit', `${response.getMetaData('rate-limit-credits')}/${response.getMetaData('rate-limit-interval')}s`);
+                if (response.hasMetaData('rate-limit-cost')) legacyResponse.setHeader('Rate-Limit-Cost', response.getMetaData('rate-limit-cost'));
+                if (response.hasMetaData('rate-limit-value')) legacyResponse.setHeader('Rate-Limit-Balance', response.getMetaData('rate-limit-value'));
+
+
+
                 switch(response.status) {
                     case 'created':
                     case 'seeOther':
@@ -342,17 +350,17 @@
 
                     case 'invalidAction':
                     case 'notFound':
-                        errorData = `Failed to execute the ${response.actionName} action on ${response.serviceName}/${response.resourceName}: ${response.message}`
+                        errorData = `Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message}`
                         break;
 
                     case 'badRequest':
                     case 'serviceUnavailable':
                     case 'forbidden':
-                        errorData = `Failed to execute the ${response.actionName} action on ${response.serviceName}/${response.resourceName}: ${response.message} (${response.code})`
+                        errorData = `Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code})`
                         break;
 
                     case 'error':
-                        errorData = `Failed to execute the ${response.actionName} action on ${response.serviceName}/${response.resourceName}: ${response.message} (${response.code}) ${response.err ? ' ('+response.err.message+')' : ''}`
+                        errorData = `Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code}) ${response.err ? ' ('+response.err.message+')' : ''}`
                         break;
                 }
 
@@ -519,7 +527,7 @@
 
                     selections.push(selection);
 
-                    const subSelections = this.convertIncomingSelection(subRequest);
+                    const subSelections = this.convertIncomingSelection(subRequest, service);
                     if (subSelections && subSelections.length) selection.addSubSelections(subSelections);
                 });
             }
