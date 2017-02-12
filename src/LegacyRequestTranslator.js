@@ -350,17 +350,17 @@
 
                     case 'invalidAction':
                     case 'notFound':
-                        errorData = `Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message}`
+                        errorData = response.toError().message; //`Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message}`
                         break;
 
                     case 'badRequest':
                     case 'serviceUnavailable':
                     case 'forbidden':
-                        errorData = `Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code})`
+                        errorData = response.toError().message; //`Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code})`
                         break;
 
                     case 'error':
-                        errorData = `Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code}) ${response.err ? ' ('+response.err.message+')' : ''}`
+                        errorData = response.toError().message; //`Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code}) ${response.err ? ' ('+response.err.message+')' : ''}`
                         break;
                 }
 

@@ -58,7 +58,7 @@
         error(code, message, err) {
             if (debug && err) log(err);
 
-            this.err = err;
+            this.err = (err ? (err instanceof Error ? err : new Error(err)) : null);
             this.code = code;
             this.message = message;
             this.status = 'error';
@@ -144,7 +144,7 @@
                     log(err);
                 });
             }).catch((err) => {
-                this.error = err;
+                this.err = err;
                 this.message = 'The beforeSend hook returned an error!';
 
                 return this.executeHook('send', this).catch(log);
@@ -188,7 +188,7 @@
 
 
         formatErrorMessage(message) {
-            return `The response returned the status ${this.status}${this.code ? ` (${this.code})` : ''}: ${message}`;
+            return `The response returned the status ${this.status}${this.code ? ` (${this.code})` : ''}${message ? `: ${message}` : ''}`;
         }
 
 
