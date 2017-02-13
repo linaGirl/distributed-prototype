@@ -288,8 +288,10 @@
 
                     case 'function':
                         if (filter.children.length === 0) return null;
-                        else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
-                        else return `${filter.functionName}(${this.convertToLegacyFilter(filter.children[0])})`;
+                        else {
+                            const results = filter.children.map(child => this.convertToLegacyFilter(child));
+                            return `${filter.functionName}(${results.join(',')})`;
+                        }
 
 
 
