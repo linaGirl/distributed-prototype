@@ -114,7 +114,7 @@
                 else range = `${request.offset}-${request.offset+100}`;
             } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
 
-//log(this.convertToLegacyFilter(request.filter))
+
 
             return new this.RPCRequest({
                   filter        : this.convertToLegacyFilter(request.filter)
@@ -128,6 +128,24 @@
                 , accessTokens  : request.tokens
             }).convert().then((result) => {// log(result);
 
+
+
+                // so, the subrequest shev no range on them, fix that
+                // not nice, but should work somehow
+                const fixRange = (request) => {
+                    if (request && request.subRequests && request.subRequests.length) {
+                        request.subRequests.forEach((subRequest) => {
+                            subRequest.range = {
+                                  from: 0
+                                , to: 2000
+                            }
+
+                            fixRange(subRequest);
+                        });
+                    }
+                };
+
+                fixRange(result.request);
 
 
 
