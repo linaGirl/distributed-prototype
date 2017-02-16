@@ -488,7 +488,7 @@
                                     const filter = new FilterBuilder();
                                     const orFilter = filter.or();
 
-                                    data[propertyName].forEach((relation) => { log(propertyName, relation);
+                                    data[propertyName].forEach((relation) => {
                                         const andFilter = orFilter.and();
 
                                         Object.keys(relation).forEach((key) => {
