@@ -527,7 +527,7 @@
 
 
 
-        applyRelatedFilter(filter) {
+        applyRelatedFilter(filter) {//log(filter);
             switch(filter.type) {
 
                 case 'or':
@@ -576,7 +576,7 @@
                         if (filter.comparator === '!=' && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('notNull')]();
                         if (filter.comparator === '=' && filter.children[0].type === 'value' && filter.children[0].nodeValue === null) return this.Related[comparators.get('isNull')]();
 
-
+                        //log(filter.comparator, comparators.get(filter.comparator), this.applyRelatedFilter(filter.children[0]));
                         if (comparators.has(filter.comparator)) return this.Related[comparators.get(filter.comparator)](this.applyRelatedFilter(filter.children[0]));
                         else throw new Error(`Invalid comparator ${filter.comparator}!`);
                     }

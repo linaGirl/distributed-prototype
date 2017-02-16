@@ -464,7 +464,11 @@
                                     const andFilter = filter.and();
 
                                     Object.keys(data[propertyName]).forEach((key) => {
-                                        andFilter.property(key).comparator('=').value(data[propertyName][key]);
+
+
+                                        // use the in function when working with multiple values
+                                        if (Array.isArray(data[propertyName][key])) andFilter.property(key).fn('in', data[propertyName][key]);
+                                        else andFilter.property(key).comparator('=').value(data[propertyName][key]);
                                     });
 
                                     return new RelationalRequest({
@@ -484,13 +488,17 @@
                                     const filter = new FilterBuilder();
                                     const orFilter = filter.or();
 
-                                    data[propertyName].forEach((relation) => {
+                                    data[propertyName].forEach((relation) => { log(propertyName, relation);
                                         const andFilter = orFilter.and();
 
                                         Object.keys(relation).forEach((key) => {
-                                            andFilter.property(key).comparator('=').value(relation[key]);
+
+                                            // use the in function when working with multiple values
+                                            if (Array.isArray(relation[key])) andFilter.property(key).fn('in', relation[key]);
+                                            else andFilter.property(key).comparator('=').value(relation[key]);
                                         });
                                     });
+
 
                                     return new RelationalRequest({
                                           resource  : relationDefinition.remote.resource
