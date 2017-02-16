@@ -478,7 +478,7 @@
                                             delete data[propertyName];
                                             if (response.data && response.data.length) data[relationDefinition.property] = response.data[0][relationDefinition.remote.property];
                                             return Promise.resolve();
-                                        } else return Promise.reject(new Error(`expected status ok, got ${response.status} instead!`));
+                                        } else return Promise.reject(response.toError());
                                     }).catch(err => Promise.reject(new Error(`Failed to load referenced relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
                                 } else if ((relationDefinition.type === 'mapping' || relationDefinition.type === 'belongsTo') && type.array(data[propertyName])) {
                                     const filter = new FilterBuilder();
@@ -503,7 +503,7 @@
                                             delete data[propertyName];
                                             if (response.data && response.data.length) data[relationDefinition.remote.resource] = response.data;
                                             return Promise.resolve();
-                                        } else return Promise.reject(new Error(`expected status ok, got ${response.status} instead!`));
+                                        } else return Promise.reject(response.toError());
                                     }).catch(err => Promise.reject(new Error(`Failed to load belongs to relational selection ${relationDefinition.remote.resource}: ${err.message}`)));
                                 } else return Promise.resolve();
                             }
