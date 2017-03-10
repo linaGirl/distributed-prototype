@@ -26,7 +26,25 @@
         load() {
             this.loading = true;
             return Promise.all(Array.from(this.services.keys()).map((serviceName) => {
-                return this.services.get(serviceName).load();
+                return new Promise((resolve, reject) => {
+                    let loaderTimeout = setTimeout(() => {
+                        loaderTimeout = null;
+                        reject(new Error(`The ${serviceName} service failed to load. Timeout triggered!`));
+                    }, 30000);
+
+                    // load now
+                    return this.services.get(serviceName).load().then(() => {
+                        if (loaderTimeout) {
+                            clearTimeout(loaderTimeout);
+                            resolve();
+                        }
+                    }).catch((err) => {
+                        if (loaderTimeout) {
+                            clearTimeout(loaderTimeout);
+                            reject(err);
+                        }
+                    });
+                });
             })).then(() => {
                 this.loaded = true;
                 this.loading = false;
@@ -64,12 +82,18 @@
 
 
 
+
+
         /**
         * returns an array containing all services
         */
         getServices() {
             return Array.from(this.services.values());
         }
+
+
+
+
 
 
 

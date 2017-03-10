@@ -314,7 +314,7 @@
 
 
             // add has one relation definitions
-            if (request.hasOption('withoutRelations')) return Promise.resolve();
+            if (request.hasOption('withoutRelations')) return response.ok(data);
             else {
                 return Promise.all(Array.from(this.relations.values()).map((service) => {
                     return Promise.all(Array.from(service.values()).map((relation) => {

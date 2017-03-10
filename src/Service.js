@@ -375,7 +375,7 @@
                 }, 1000);
 
 
-                log.info(`[Distributed][${id}] Incoming request to ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} ...`);
+                log.info(`[Distributed][${id}] Incoming request on ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} ...`);
                 response.onAfterSend = () => {
                     log.success(`[Distributed][${id}] Outgoing response from ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} with the status ${response.status}${type.array(response.data) ? ` and ${response.data.length} records` : '' } after ${Date.now()-start} ms...`);
                     clearInterval(timeout);
