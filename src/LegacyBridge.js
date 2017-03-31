@@ -30,6 +30,14 @@
 
 
 
+
+        end() {
+            return this.serviceManager.end();
+        }
+
+
+
+
         isService() {
             return true;
         }

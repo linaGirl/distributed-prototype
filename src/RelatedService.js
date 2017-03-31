@@ -35,6 +35,18 @@
 
 
 
+        end() {
+            return super.end().then(() => {
+                if (this.related) return this.related.end();
+                else return Promise.resolve();
+            });
+        }
+
+
+
+
+
+
         registerAutoloadTables() {
             return Promise.all(Array.from(this.autoloadTables).map((tableName) => {
                 this.registerResource(new RelatedResourceController(this.resourceControllerOptions, tableName));

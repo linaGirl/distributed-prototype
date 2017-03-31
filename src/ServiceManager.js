@@ -23,6 +23,14 @@
 
 
 
+        end() {
+            return Promise.all(Array.from(this.services.values()).map(service => service.end()));
+        }
+
+
+
+
+
         load() {
             this.loading = true;
             return Promise.all(Array.from(this.services.keys()).map((serviceName) => {

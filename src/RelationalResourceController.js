@@ -9,6 +9,7 @@
     const RelationalSelection = require('./RelationalSelection');
     const type = require('ee-types');
     const log = require('ee-log');
+    const assert = require('assert');
 
 
 
@@ -25,7 +26,193 @@
 
             // storage for the referencing keys registered on this resource
             this.referencingKeys = new Map();
+
+            // the controller infrastructure can handle localized
+            // data that is stored on other entities that belong to 
+            // this entitiy. this flags that sich an entity is available
+            this.isLocalized = false;
         }
+
+
+
+
+
+
+
+
+        /**
+        * enable support for data localization via a remote table
+        */
+        enableLocalization({
+              localProperty
+            , remoteResource
+            , remoteService = this.getServiceName()
+            , remoteProperty
+            , remoteLanguageProperty = 'languageId'
+            , languageService
+            , languageResource
+            , languageProperty
+            , languageCodeProperty
+        }) {
+
+            this.isLocalized = true;
+
+            // save the config
+            this.localizationConfig = {
+                  localProperty: localProperty
+                , remote: {
+                      service: remoteService
+                    , resource: remoteResource
+                    , property: remoteProperty
+                    , languageProperty: remoteLanguageProperty
+                }
+                , language: {
+                      service: languageService
+                    , resource: languageResource
+                    , property: languageProperty
+                    , codeProperty: languageCodeProperty
+                }
+            };
+
+
+            // we're caching the resolved languages
+            this.languageCache = new Map(); 
+        }
+
+
+
+
+
+
+
+
+        /**
+        * handles the locales for listings
+        */
+        async loadLocaleData({languages = [], records} = {}) {
+            if (this.isLocalized && records) {
+                const config = this.localizationConfig;
+                assert(languages && Array.isArray(languages), `option 'languages' must be an array!`);
+                const blacklistendColumns = ['id', config.remote.languageProperty, config.remote.property];
+
+
+                // collect our ids
+                const localRowMap = new Map();
+                records.forEach((row) => {
+                    localRowMap.set(row[config.localProperty], row);
+                });
+
+
+                // start building the filrer
+                const filter = new FilterBuilder().and();
+
+
+                // add our ids 
+                filter.property(config.remote.property).comparator('in').value(Array.from(localRowMap.keys()));
+
+
+                // get the languages ids                
+                const languageData = await this.resolveLanguage(config.language, languages);
+    
+
+                // filter the languages
+                filter.property(config.remote.languageProperty).comparator('in').value(languageData.map(r => r[config.language.property]));
+
+
+                // lets get the locales
+                const response = await (new RelationalRequest({
+                        action: 'list'
+                      , service: config.remote.service
+                      , resource: config.remote.resource
+                      , filter: new FilterBuilder()
+                      , selection: ['*']
+                }).send(this));
+
+
+                if (response.status === 'ok') {
+                    const data = response.data;
+
+                    if (data && Array.isArray(data) && data.length) {
+
+                        // order by the languages delivered by the original request
+                        data.sort((a, b) => {
+                            return languages.indexOf(a[condig.language.codeProperty]) - languages.indexOf(b[condig.language.codeProperty])
+                        });
+
+                        // apply row by row, not that fast, but there should never too mcuh data
+                        for (const locale of data) {
+                            const localeProperties = Object.keys(locale).filter(column => !blacklistendColumns.includes(column));
+                            const currentRow = localRowMap.get(locale[config.remote.property]);
+
+                            // iterat
+                            for (const property of localeProperties) {
+                                const value = locale[property];
+                                const localValue = currentRow[property];
+
+                                if (value !== null && 
+                                    value !== undefined &&
+                                    currentRow && (
+                                        localValue === null ||
+                                        localValue === undefined ||
+                                        localValue === "")) {
+
+                                    currentRow[property] = value;
+                                }
+                            }
+                        }                    
+                    }
+                } else throw response.toError();
+            }
+        }
+
+
+
+
+
+
+
+
+        /**
+        * get language ids. implementing this here
+        * since we're working on the prototype and
+        * implementing caching on the framework is a nogo
+        * for the prototoype since it would be lost effort
+        */
+        resolveLanguage(config, codes) {
+            return Promise.all(codes.map((code) => {
+                if (this.languageCache.has(code)) return this.languageCache.get(code);
+                else {
+                    const promise = new RelationalRequest({
+                            action: 'list'
+                          , service: config.service
+                          , resource: config.resource
+                          , selection: [config.property, config.codeProperty]
+                          , filter: new FilterBuilder().property(config.codeProperty).comparator('=').value(code)
+                    }).send(this).then((response) => {
+                        if (response.status === 'ok') {
+                            if (response.data && Array.isArray(response.data) && response.data.length) return Promise.resolve(response.data[0]);
+                            else return Promise.resolve();
+                        } return Promise.reject(response.toError());
+                    });
+
+
+                    this.languageCache.set(code, promise);
+
+                    return promise;
+                }   
+            })).then((results) => {
+                return Promise.resolve(results.filter(item => !!item));
+            });
+        }
+
+
+
+
+
+
+
+
+
 
 
 

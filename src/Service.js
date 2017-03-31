@@ -51,6 +51,16 @@
 
 
 
+        /**
+        * the service has to shut dwon
+        */
+        end() {
+            return Promise.all(Array.from(this.resources.values()).map(resourceController => resourceController.end()));
+        }
+
+
+
+
 
         /**
          * returns the serrvice name

@@ -36,6 +36,9 @@
 
 
 
+
+
+
     module.exports = class RelatedResourceController extends RelationalResourceController {
 
 
@@ -49,6 +52,8 @@
 
             this.enableActions();
         }
+
+
 
 
 
@@ -380,11 +385,18 @@
                     this.loadRelationanlSelections(request, data).then(() => {
 
 
-                        // remove ids for references
-                        this.removeReferenceIds(data, request.requestingResource, request.selection);
+                        // load lcoale data
+                        this.loadLocaleData({
+                              languages: request.getLanguages()
+                            , records: data
+                        }).then(() => {
 
-                        // k, there you go!
-                        response.ok(data);
+                            // remove ids for references
+                            this.removeReferenceIds(data, request.requestingResource, request.selection);
+
+                            // k, there you go!
+                            response.ok(data);
+                        }).catch(log); //err => response.error('locale_error', `Failed to load locale data: ${err.message}`, err));
                     }).catch(err => response.error('query_error', `Failed to load relational selection!`, err));
                 });
             }).catch(err => response.error('db_error', `Failed to load ${this.name} resource!`, err));
@@ -509,8 +521,7 @@
 
 
                 return Promise.resolve();
-            }
-            else return Promise.reject(`Cannot autoload related controller ${this.getName()} on the table ${this.tableName}. It does not exist in the database!`);
+            } else return Promise.reject(`Cannot load related controller ${this.getName()} on the table ${this.tableName}. It does not exist in the database!`);
         }
 
 

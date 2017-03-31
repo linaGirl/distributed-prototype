@@ -58,7 +58,12 @@
 
 
 
-
+        /**
+        * end hook
+        */
+        end() {
+            return Promise.resolve();
+        }
 
 
 
