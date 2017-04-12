@@ -367,8 +367,23 @@
             this.prepareSelection(request);
 
 
+            // extract fields that are not properties of this entity
+            const foreignSelections = new Set();
+            const localSelections = new Set();
+
+            for (const property of request.getSelection()) {
+                if (property === '*') {
+                    foreignSelections.add('*');
+                    localSelections.add('*');
+                } else {
+                    if (this.definition.hasProperty(property)) localSelections.add(property);
+                    else foreignSelections.add(property);
+                } 
+            }
+
+
             // create query, apply my filters
-            const query = this.db[this.tableName](request.selection);
+            const query = this.db[this.tableName](Array.from(localSelections));
 
             // let the user apply filters
             this.applyFilter(query, request.filter);
@@ -381,14 +396,15 @@
             query.raw().find().then((data) => {
                 return response.executeHook('afterListQuery', data).then(() => {
 
-                    // load related dats selectedd by the user
+                    // load related dats selected by the user
                     this.loadRelationanlSelections(request, data).then(() => {
 
 
-                        // load lcoale data
+                        // load locale data
                         this.loadLocaleData({
                               languages: request.getLanguages()
                             , records: data
+                            , selection: foreignSelections
                         }).then(() => {
 
                             // remove ids for references
@@ -396,7 +412,7 @@
 
                             // k, there you go!
                             response.ok(data);
-                        }).catch(log); //err => response.error('locale_error', `Failed to load locale data: ${err.message}`, err));
+                        }).catch(err => response.error('locale_error', `Failed to load locale data: ${err.message}`, err));
                     }).catch(err => response.error('query_error', `Failed to load relational selection!`, err));
                 });
             }).catch(err => response.error('db_error', `Failed to load ${this.name} resource!`, err));

@@ -12,6 +12,17 @@
 
 
 
+
+    const simpleComparators = new Set();
+    simpleComparators.add('=');
+    simpleComparators.add('!=');
+    simpleComparators.add('>');
+    simpleComparators.add('>=');
+    simpleComparators.add('<');
+    simpleComparators.add('<=');
+
+
+
     const statusCodeMap = new Map();
     statusCodeMap.set('ok', 1);
     statusCodeMap.set('created', 2);
@@ -113,7 +124,6 @@
                 if (type.number(request.limit)) range = `${request.offset}-${request.offset+request.limit}`;
                 else range = `${request.offset}-${request.offset+100}`;
             } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
-
 
 
             return new this.RPCRequest({
@@ -301,7 +311,21 @@
                     case 'comparator':
                         if (filter.children.length === 0) return null;
                         else if (filter.children.length > 1) throw new Error(`Cannot build comparator filter with more than on child!`);
-                        else return `${filter.comparator}${this.convertToLegacyFilter(filter.children[0])}`;
+                        else {
+                            if (simpleComparators.has(filter.comparator)) return `${filter.comparator}${this.convertToLegacyFilter(filter.children[0])}`;
+                            else {
+                                // a function filter
+                                let filterString = '';
+
+                                // add the equal comparator if not already set as parent
+                                if (filter.parent.type !== 'comparator') filterString += '=';
+
+                                // get the filters contents
+                                filterString += `${filter.comparator}(${this.convertToLegacyFilter(filter.children[0])})`;
+
+                                return filterString;
+                            }
+                        }
 
 
                     case 'function':
@@ -413,12 +437,14 @@
         convertIncomingRequest(legacyRequest) {
             let action = legacyRequest.getActionName();
 
+
             // relation stuff
             if (action === 'create' && legacyRequest.hasRelatedTo()) action = 'createRelation';
             if (action === 'createOrUpdate' && legacyRequest.hasRelatedTo()) action = 'createOrUpdateRelation';
             if (action === 'update' && legacyRequest.hasRelatedTo()) action = 'updateRelation';
             if (action === 'delete' && legacyRequest.hasRelatedTo()) action = 'deleteRelation';
             if (action === 'list' && legacyRequest.hasRelatedTo()) action = 'listRelation';
+
 
             // bulk operations
             if (action === 'delete' && legacyRequest.hasResourceId()) action = 'deleteOne';
@@ -429,6 +455,7 @@
             if (action === 'updateRelation' && legacyRequest.hasResourceId()) action = 'updateOneRelation';
             if (action === 'deleteRelation' && legacyRequest.hasResourceId()) action = 'deleteOneRelation';
             if (action === 'createOrUpdate' && legacyRequest.hasResourceId()) action = 'createOrUpdateOne';
+
 
             const tokens = legacyRequest.accessTokens ? legacyRequest.accessTokens : (legacyRequest.accessToken ? [legacyRequest.accessToken] : []);
 
@@ -463,6 +490,8 @@
                     remoteResource = remoteResource.substr(remoteIndex+1);
                 }
             }
+
+            if (!remoteService) remoteService = 'legacy';
 
 
 
@@ -529,11 +558,11 @@
 
                     // check for containedd service in the collection
                     let resource = subRequest.getCollection();
-                    const index = resource.indexOf('.');
+                    const index = resource.indexOf(':');
 
                     if (index >= 0) {
-                        service = resource.susbtr(0, index);
-                        resource = resource.susbtr(index+1);
+                        service = resource.substr(0, index);
+                        resource = resource.substr(index+1);
                     }
 
 

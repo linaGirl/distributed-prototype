@@ -89,7 +89,7 @@
         /**
         * handles the locales for listings
         */
-        async loadLocaleData({languages = [], records} = {}) {
+        async loadLocaleData({languages = [], records, selection = new Set()} = {}) {
             if (this.isLocalized && records) {
                 const config = this.localizationConfig;
                 assert(languages && Array.isArray(languages), `option 'languages' must be an array!`);
@@ -124,8 +124,8 @@
                         action: 'list'
                       , service: config.remote.service
                       , resource: config.remote.resource
-                      , filter: new FilterBuilder()
-                      , selection: ['*']
+                      , filter: filter
+                      , selection: Array.from(selection)
                 }).send(this));
 
 
@@ -162,6 +162,10 @@
                         }                    
                     }
                 } else throw response.toError();
+            } else {
+                if (selection.has('*')) selection.delete('*');
+
+                if (selection.size) throw new Error(`Cannot select properties '${Array.from(selection).join(`', '`)}' on the ${this.getServiceName()}/${this.getName()} resource. The properties do not exist!`);
             }
         }
 
@@ -267,6 +271,64 @@
             }
             else response.badRequest('missing_request_body', `The relation cannot be registered on the resource ${this.getName()} becuase the request contains no data!`);
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        createOrUpdateOneRelation(request, response) {
+            
+            // redirect to the bulk method
+            if (this.definition.primaryIds.length > 1) response.badRequest('invalid_call', `Cannot accept createOrUpdateOneRelation request on a resource with more than one primary ids!`);
+            else {
+                new RelationalRequest({
+                      action: 'listOne'
+                    , service: request.remoteService
+                    , resource: request.remoteResource
+                    , resourceId: request.remoteResourceId
+                }).send(this).then((remoteResponse) => {
+                    if (remoteResponse.status === 'ok' && typeof remoteResponse.hasObjectData()) {
+
+
+                        // nice, get the local records
+                        new RelationalRequest({
+                              action: 'list'
+                            , service: request.service
+                            , resource: request.resource
+                            , resourceId: request.resourceId
+                        }).send(this).then((listResponse) => {
+                            if (listResponse.status === 'ok') {
+
+
+                                if (listResponse.hasObjectData()) {
+
+                                    // update
+                                    this.update(request, response);
+                                } else {
+
+                                    // create
+                                    this.create(request, response);
+                                }
+                            } else response.error('list_error', `Failed to laod the remote resource ${request.remoteService}/${request.remoteResource}/${request.remoteResourceId}`, listResponse.toError());
+                        });
+                    } else response.notFound(`Remote resource not found: ${request.remoteService}/${request.remoteResource}/${request.remoteResourceId}`);
+                }).catch(response.error('loading_errors', `Failed to laod the remote record ${request.remoteService}/${request.remoteResource}/${request.remoteResourceId}`, remoteResponse.toError()));
+            }
+        }
+
+
+
+
 
 
 
