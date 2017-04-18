@@ -133,10 +133,11 @@
                     const data = response.data;
 
                     if (data && Array.isArray(data) && data.length) {
+                        const languageIds = languageData.map(x => x.id);
 
                         // order by the languages delivered by the original request
                         data.sort((a, b) => {
-                            return languages.indexOf(a[condig.language.codeProperty]) - languages.indexOf(b[condig.language.codeProperty])
+                            return languageIds.indexOf(a[config.remote.languageProperty]) - languageIds.indexOf(b[config.remote.languageProperty]);
                         });
 
                         // apply row by row, not that fast, but there should never too mcuh data
