@@ -171,7 +171,7 @@
                     return new Error(this.formatErrorMessage(this.message));
 
                 case 'error':
-                    return new Error(this.formatErrorMessage(`${this.message}${this.err ? `: ${this.err.message}` : ''}`));
+                    return new Error(this.formatErrorMessage(`${this.message}${this.err ? `: ${this.err.message}${this.getErrorFile(this.err)}` : ''}`));
 
                 case 'ok':
                     return new Error(`Canont create Error from response since the response has the status ${this.status} which is not an error!`);
@@ -192,6 +192,16 @@
         }
 
 
+
+
+        getErrorFile(err) {
+            if (err && err.stack) {
+                const match = /at (.+:\d+:\d+)\n/.exec(err.stack);
+                if (match && match.length) return ` (${match[1]})`; 
+            }
+
+            return '';
+        }
 
 
 

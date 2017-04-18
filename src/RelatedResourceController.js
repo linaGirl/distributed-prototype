@@ -59,17 +59,22 @@
 
 
         enableActions() {
-            this.enableAction('list');
-            this.enableAction('listOne');
             this.enableAction('create');
             this.enableAction('createOne');
+            this.enableAction('createOneRelation');
+            this.enableAction('createOrUpdate');
+            this.enableAction('createOrUpdateOne');
+            this.enableAction('createOrUpdateOneRelation');
+            this.enableAction('createRelation');
             this.enableAction('delete');
             this.enableAction('deleteOne');
+            this.enableAction('deleteOneRelation');
+            this.enableAction('describe');
+            this.enableAction('list');
+            this.enableAction('listOne');
             this.enableAction('update');
             this.enableAction('updateOne');
-            this.enableAction('createRelation');
-            this.enableAction('createOrUpdateOneRelation');
-            this.enableAction('describe');
+            this.enableAction('updateOneRelation');
         }
 
 
@@ -153,7 +158,7 @@
                 Promise.all(request.data.map((data, index) => {
                     return this.resolveRelations(data).then(() => {
 
-                        return new transaction[this.tableName](data).save().then((record) => {
+                        return new transaction[this.tableName](data).debug().save().then((record) => {
                             if (this.definition.hasPrimaryIds()) {
                                 if (this.definition.primaryIds.length === 1) return Promise.resolve(record[this.definition.primaryIds]);
                                 else return Promise.resolve(this.definition.primaryIds.map(name => record[name]));
@@ -172,76 +177,6 @@
 
 
 
-
-/*
-
-
-
-
-        createOrUpdate(request, response) {
-            // ok... check for each item it it exists
-            // call the create or update method on each
-            // of them.
-
-
-            // we'll pass the transaction on the
-            // since it wont leave the service
-            // which is a hack until distributed
-            // transactions are avialable
-            const transaction = this.db.createTransaction();
-
-
-
-        }
-
-
-*/
-
-
-
-/*
-
-        createOneRelation(request, response) {
-
-
-            // check if the relation is known
-            if (this.relations.has(request.remoteResource)) {
-
-                // get teh remote item
-                new RelationalRequest({
-                      action: 'listOne'
-                    , service: request.remoteService
-                    , resource: request.remoteResource
-                    , resourceId: request.remoteResourceId
-                    , selection: ['*']
-                }).send(this).then((response) => {
-                    if (response.status === 'ok') {
-                        if (response.data) {
-
-                            // now lets check what the nex step is.
-                            // if we got a resourceId it's actually
-                            // linking tow entities, else its creation
-                            // of the local entity and thereaftter a linking
-                            if (!request.hasResourceId()) {
-
-                                // create the resource, check if
-                                // the relation is a reference and
-                                // the foreign key must be set
-                                if (!request.data) request.data = {};
-                                if ()
-                            }
-
-                        } else return Promise.reject(new Error(`Failed to laod remote resource with the id ${request.remoteResourceId}!`));
-                    } else return Promise.reject(new Error(`Remote resource responend with the status ${response.status}: ${response.message}`));
-                }).catch(err => response.error('relation_loading_error', `Failed to load the relation ${request.remoteResource} of the resource ${this.getName()}!`, err));
-            } else response.notFound('unknown_relation', `Cannot resolve the relation between ${this.getName()} and ${request.remoteResource}!`)
-        }
-
-
-
-
-
-*/
 
 
 

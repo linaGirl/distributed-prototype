@@ -217,17 +217,19 @@
 
 
 
-
-
-
-
         enableActions() {
-            this.enableAction('listOne');
             this.enableAction('createOne');
+            this.enableAction('createOneRelation');
+            this.enableAction('createOrUpdate');
+            this.enableAction('createOrUpdateOne');
+            this.enableAction('createOrUpdateOneRelation');
             this.enableAction('deleteOne');
-            this.enableAction('updateOne');
-            this.enableAction('registerRelation');
+            this.enableAction('deleteOneRelation');
             this.enableAction('describe');
+            this.enableAction('listOne');
+            this.enableAction('registerRelation');
+            this.enableAction('updateOne');
+            this.enableAction('updateOneRelation');
         }
 
 
@@ -287,46 +289,201 @@
 
 
         createOrUpdateOneRelation(request, response) {
-            
+            const mode = 'createOrUpdate';
+
             // redirect to the bulk method
-            if (this.definition.primaryIds.length > 1) response.badRequest('invalid_call', `Cannot accept createOrUpdateOneRelation request on a resource with more than one primary ids!`);
-            else {
-                new RelationalRequest({
-                      action: 'listOne'
-                    , service: request.remoteService
-                    , resource: request.remoteResource
-                    , resourceId: request.remoteResourceId
-                }).send(this).then((remoteResponse) => {
-                    if (remoteResponse.status === 'ok' && typeof remoteResponse.hasObjectData()) {
-
-
-                        // nice, get the local records
-                        new RelationalRequest({
-                              action: 'list'
-                            , service: request.service
-                            , resource: request.resource
-                            , resourceId: request.resourceId
-                        }).send(this).then((listResponse) => {
-                            if (listResponse.status === 'ok') {
-
-
-                                if (listResponse.hasObjectData()) {
-
-                                    // update
-                                    this.update(request, response);
-                                } else {
-
-                                    // create
-                                    this.create(request, response);
-                                }
-                            } else response.error('list_error', `Failed to laod the remote resource ${request.remoteService}/${request.remoteResource}/${request.remoteResourceId}`, listResponse.toError());
-                        });
-                    } else response.notFound(`Remote resource not found: ${request.remoteService}/${request.remoteResource}/${request.remoteResourceId}`);
-                }).catch(response.error('loading_errors', `Failed to laod the remote record ${request.remoteService}/${request.remoteResource}/${request.remoteResourceId}`, remoteResponse.toError()));
-            }
+            if (this.definition.primaryIds.length > 1) response.badRequest('invalid_call', `Cannot accept createOrUpdateOneRelation request on a resource with more than one primary id!`);
+            else this.handleRelationalWrite({request, response, mode});
         }
 
 
+
+
+
+
+        createOneRelation(request, response) {
+            const mode = 'create';
+
+            // redirect to the bulk method
+            if (this.definition.primaryIds.length > 1) response.badRequest('invalid_call', `Cannot accept createOneRelation request on a resource with more than one primary id!`);
+            else this.handleRelationalWrite({request, response, mode});
+        }
+
+
+
+
+
+
+        updateOneRelation(request, response) {
+            const mode = 'update';
+
+            // redirect to the bulk method
+            if (this.definition.primaryIds.length > 1) response.badRequest('invalid_call', `Cannot accept updateOneRelation request on a resource with more than one primary id!`);
+            else this.handleRelationalWrite({request, response, mode});
+        }
+
+
+
+
+
+
+        deleteOneRelation(request, response) {
+            const mode = 'delete';
+
+            // redirect to the bulk method
+            if (this.definition.primaryIds.length > 1) response.badRequest('invalid_call', `Cannot accept deleteOneRelation request on a resource with more than one primary id!`);
+            else this.handleRelationalWrite({request, response, mode});
+        }
+
+
+
+
+
+
+
+        handleRelationalWrite({request, response, mode}) {
+            if (this.relations.has(request.remoteService)) {
+                const relations = this.relations.get(request.remoteService);
+
+
+                if (relations.has(request.remoteResource)) {
+                    const relation = relations.get(request.remoteResource);
+
+                    switch (relation.type) {
+
+                        case 'reference':
+
+                            // set the relations key
+                            if (!request.data) request.data = {};
+                            request.data[relation.property] = mode === 'delete' ? null : request.remoteResourceId; 
+
+                            // just patch the local resource
+                            return this.update(request, response);
+
+
+
+                        case 'belongsTo':
+
+                            // swap adressing and send to remote to process as reference!
+                            // keep it simple stupid
+                            [request.service, request.remoteService] = [request.remoteService, request.service];
+                            [request.resource, request.remoteResource] = [request.remoteResource, request.resource];
+                            [request.resourceId, request.remoteResourceId] = [request.remoteResourceId, request.resourceId];
+
+                            return this.sendRequest(request, response);
+
+
+
+                        case 'mapping':
+
+                            if (mode !== 'create') {
+                                // only the create method does not need a filter
+                                const filter = new FilterBuilder().and();
+
+                                filter.property(relation.via.localProperty).comparator('=').value(request.resourceId);
+                                filter.property(relation.via.remoteProperty).comparator('=').value(request.remoteResourceId);
+
+                                request.setFilter(filter);
+                            }
+
+
+                            // set the correct action
+                            switch (mode) {
+                                case 'create': 
+                                    request.setAction('createOne');
+                                    break;
+
+                                case 'update': 
+                                    request.setAction('update');
+                                    break;
+
+                                case 'createOrUpdate': 
+                                    request.setAction('createOrUpdate');
+                                    break;
+
+                                case 'delete': 
+                                    request.setAction('delete');
+                                    break;
+
+                                default: 
+                                    return response.error('server_error', `Invalid mode '${mode}' when workign on the relation between ${this.getServiceName()}/${this.getName()} and ${request.remoteService}/${request.remoteResource}!`);
+                            }
+
+
+                            if (mode !== 'delete') {
+                                // delete needs no payload
+                                if (!request.data) request.data = {};
+                                request.data[relation.via.localProperty] = request.resourceId; 
+                                request.data[relation.via.remoteProperty] = request.remoteResourceId;
+                            }
+
+                            // re-reoute
+                            request.setService(relation.via.service);
+                            request.setResource(relation.via.resource);
+
+
+                            // go!
+                            return this.sendRequest(request, response);
+
+
+                        default: 
+                            return response.error('invalid_relation_type', `Cannot resolve the relation between ${this.getServiceName()}/${this.getName()} and ${request.remoteService}/${request.remoteResource}, relation type ${relation.type} unknonwn!`);
+                    }
+                } else response.badRequest('unknown_relation', `Cannot resolve the relation between ${this.getServiceName()}/${this.getName()} and ${request.remoteService}/${request.remoteResource}, relation unknonwn!`);
+            } else response.badRequest('unknown_relation', `Cannot resolve the relation between ${this.getServiceName()}/${this.getName()} and ${request.remoteService}/${request.remoteResource}, relation unknonwn!`);
+        }
+
+
+
+
+
+
+
+
+
+
+
+        createOrUpdateOne(request, response) {
+
+            // check if the resource exists, update if yes, create if no
+            new RelationalRequest({
+                  service: request.service
+                , resource: request.resource
+                , resourceId: request.resourceId
+                , action: 'listOne'
+            }).send(this).then((listResponse) => {
+                if (listResponse.status === 'notFound') request.setAction('createOne');
+                else request.setAction('updateOne');
+
+                return this.sendRequest(request, response);
+            }).catch(err => response.error('server_error', `Failed to execute request!`, err));
+        }
+
+
+
+
+
+
+
+
+
+
+
+        createOrUpdate(request, response) {
+
+            // check if the resources exist, update if yes, create new if no
+            new RelationalRequest({
+                  service: request.service
+                , resource: request.resource
+                , filter: request.filter
+                , action: 'list'
+            }).send(this).then((listResponse) => {
+                if (listResponse.status === 'notFound' || !Array.isArray(listResponse.data) || !listResponse.data.length) request.setAction('createOne');
+                else request.setAction('update');
+
+                return this.sendRequest(request, response);
+            }).catch(err => response.error('server_error', `Failed to execute request!`, err));
+        }
 
 
 
@@ -392,7 +549,7 @@
 
 
         updateOne(request, response) {
-            if (!this.definition.hasPrimaryId()) return response.error('no_primary_id', `the resource has no or multiple primary ids and can only be deleted using the update action!`);
+            if (!this.definition.hasPrimaryId()) return response.error('no_primary_id', `the resource has no or multiple primary ids and can only be updated using the update action!`);
             else {
 
                 // remove array in response
