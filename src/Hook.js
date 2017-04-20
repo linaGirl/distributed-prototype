@@ -20,12 +20,31 @@
 
         executeHook(name, ...args) {
             if (this.hooks.has(name)) {
-                return Promise.all(this.hooks.get(name).map((listener) => {
-                    const returnValue = listener.apply(null, args);
+                const hooks = this.hooks.get(name);
 
-                    if (typeof returnValue === 'object' && typeof returnValue.then === 'function') return returnValue;
-                    else return Promise.resolve();
-                }));
+                const execute = (index = 0) => {
+                    if (hooks.length > index) {
+                        return Promise.resolve().then(() => {
+                            const listener = hooks[index];
+                            let returnValue;
+
+                            try {
+                                returnValue = listener.apply(null, args);
+                            } catch(err) {
+                                return Promise.reject(err);
+                            }
+
+                            if (returnValue instanceof Error) return Promise.reject(err);
+                            if (typeof returnValue === 'object' && typeof returnValue.then === 'function') return returnValue;
+                            else return Promise.resolve();
+                        }).then(() => {
+                            return execute(index+1);
+                        });
+                    } else return Promise.resolve();
+                };
+
+
+                return execute();
             } else return Promise.resolve();
         }
 
@@ -37,8 +56,13 @@
 
 
 
-        clearHooks() {
-            this.hooks.clear();
+        clearHooks(hookName) {
+            if (hookName) {
+                if (this.hooks.has(hookName)) {
+                    const hooks = this.hooks.get(hookName);
+                    hooks.splice(0, hooks.length);
+                }
+            } else this.hooks.clear();
             return Promise.resolve();
         }
 

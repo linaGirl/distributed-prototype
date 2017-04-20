@@ -134,21 +134,28 @@
 
 
         send() {
-            return this.executeHook('beforeSend', this).then(() => {
-                return this.executeHook('send', this).then(() => {
-                    return this.executeHook('afterSend', this);
-                    Object.freeze(this);
-                }).then(() => {
-                    return this.clearHooks();
-                }).catch((err) => {
-                    log(err);
-                });
-            }).catch((err) => {
-                this.err = err;
-                this.message = 'The beforeSend hook returned an error!';
+            if (!this.sendCalled) {
+                this.sendCalled = true;
 
-                return this.executeHook('send', this).catch(log);
-            });
+                return this.executeHook('beforeSend', this).then(() => {
+                    return this.executeHook('send', this).then(() => {
+                        return this.executeHook('afterSend', this);
+                        Object.freeze(this);
+                    }).then(() => {
+                        return this.clearHooks();
+                    }).catch((err) => {
+                        log(err);
+                    });
+                }).catch((err) => {
+                    this.err = err;
+                    this.message = 'The beforeSend hook failed to execute!';
+                    this.status = 'error';
+                    this.code = 'hook_error';
+                    this.data = undefined;
+
+                    return this.executeHook('send', this).catch(log);
+                });
+            }
         }
 
 
