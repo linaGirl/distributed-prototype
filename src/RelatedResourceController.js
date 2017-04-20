@@ -158,7 +158,7 @@
                 Promise.all(request.data.map((data, index) => {
                     return this.resolveRelations(data).then(() => {
 
-                        return new transaction[this.tableName](data).debug().save().then((record) => {
+                        return new transaction[this.tableName](data).save().then((record) => {
                             if (this.definition.hasPrimaryIds()) {
                                 if (this.definition.primaryIds.length === 1) return Promise.resolve(record[this.definition.primaryIds]);
                                 else return Promise.resolve(this.definition.primaryIds.map(name => record[name]));

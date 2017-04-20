@@ -155,7 +155,7 @@
 
                     return this.executeHook('send', this).catch(log);
                 });
-            }
+            } 
         }
 
 
@@ -181,14 +181,14 @@
                     return new Error(this.formatErrorMessage(`${this.message}${this.err ? `: ${this.err.message}${this.getErrorFile(this.err)}` : ''}`));
 
                 case 'ok':
-                    return new Error(`Canont create Error from response since the response has the status ${this.status} which is not an error!`);
+                    return new Error(`Cannot create Error from response since the response has the status ${this.status} which is not an error!`);
 
                 case undefined:
                 case null:
-                    return new Error(`Canont create Error from response since the response has no status!`);
+                    return new Error(`Cannot create Error from response since the response has no status!`);
 
                 default:
-                    return new Error(`Canont create Error from response: unknown status ${this.status}!`);
+                    return new Error(`Cannot create Error from response: unknown status ${this.status}!`);
             }
         }
 

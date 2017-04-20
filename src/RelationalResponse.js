@@ -77,7 +77,7 @@
                 case 'accepted':
                 case 'noContent':
                 case 'created':
-                    return new Error(`Canont create Error from response since the response has the status ${this.status} which ois not an error!`);
+                    return new Error(`Cannot create Error from response since the response has the status ${this.status} which ois not an error!`);
 
                 default:
                     return super.toError();
