@@ -61,7 +61,7 @@
 
 
         addToken(token) {
-            if (!this.tokens) this.token = [];
+            if (!this.tokens) this.tokens = [];
             if (Array.isArray(token)) token.forEach(t => this.tokens.push(t));
             else this.tokens.push(token);
         }
