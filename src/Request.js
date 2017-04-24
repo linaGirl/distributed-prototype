@@ -1,9 +1,10 @@
 (function() {
     'use strict';
 
-    const type = require('ee-types');
+    const assert = require('assert');
     const log = require('ee-log');
     const Response = require('./Response');
+    const type = require('ee-types');
 
 
 
@@ -13,13 +14,14 @@
 
         constructor(options) {
             if (type.object(options)) {
-                if (options.resource)   this.setResource(options.resource);
-                if (options.service)    this.setService(options.service);
-                if (options.action)     this.setAction(options.action);
-                if (options.tokens)     this.setTokens(options.tokens);
-                if (options.token)      this.setToken(options.token);
-                if (options.options)    this.setOptions(options.options);
-                if (options.origin)     this.setOrigin(options.origin);
+                if (options.resource)           this.setResource(options.resource);
+                if (options.service)            this.setService(options.service);
+                if (options.action)             this.setAction(options.action);
+                if (options.tokens)             this.setTokens(options.tokens);
+                if (options.token)              this.setToken(options.token);
+                if (options.options)            this.setOptions(options.options);
+                if (options.origin)             this.setOrigin(options.origin);
+                if (options.responseFormats)    this.setResponseFormats(options.responseFormats);
             }
         }
 
@@ -45,6 +47,35 @@
         }
 
 
+
+
+
+
+
+
+        /**
+        * handles mimetypes requested by the user
+        */
+        hasResponseFormat(identifier) {
+            return this.reponseFormat && this.reponseFormat.has(identifier);
+        }
+
+
+        addResponseFormat(identifier) {
+            if (!this.reponseFormat) this.reponseFormat = new Set();
+            this.reponseFormat.add(identifier);
+        }
+
+
+        getResponseFormats() {
+            return this.reponseFormat ? Array.from(this.reponseFormat) : [];
+        }
+
+
+        setResponseFormats(formats) {
+            assert(Array.isArray(formats), `responseFormats must be an array!`);
+            formats.forEach(format => this.addResponseFormat(format));
+        }
 
 
 
