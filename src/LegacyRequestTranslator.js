@@ -338,10 +338,18 @@
 
 
                     case 'value':
-                        return isNaN(filter.nodeValue+'') ? `'${filter.nodeValue}'` : filter.nodeValue+'';
+                        if (Array.isArray(filter.nodeValue)) return filter.nodeValue;
+                        else return isNaN(filter.nodeValue+'') ? `'${filter.nodeValue}'` : filter.nodeValue+'';
                 }
             }
         }
+
+
+
+
+
+
+
 
 
         getEntityPath(filter) {
