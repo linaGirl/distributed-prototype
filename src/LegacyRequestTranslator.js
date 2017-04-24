@@ -494,6 +494,14 @@
             if (!remoteService) remoteService = 'legacy';
 
 
+            const responseFormats = [];
+            const legacyFormats = legacyRequest.getFormats();
+            if (legacyFormats && legacyFormats.length) {
+                legacyFormats.forEach((format) => {
+                    responseFormats.push(`${format.getType()}/${format.getSubtype()}`);
+                });
+            }
+
 
             const request = new RelationalRequest({
                   resource              : legacyRequest.collection
@@ -512,6 +520,7 @@
                 , offset                : (range ? (range.from || 0) : null)
                 , options               : legacyRequest.getParameters()
                 , languages             : legacyRequest.languages
+                , responseFormats       : responseFormats
             });
 
 
