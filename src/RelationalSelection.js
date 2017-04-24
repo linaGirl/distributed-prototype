@@ -58,6 +58,19 @@
 
 
 
+
+
+        addToken(token) {
+            if (!this.tokens) this.token = [];
+            if (Array.isArray(token)) token.forEach(t => this.tokens.push(t));
+            else this.tokens.push(token);
+        }
+
+
+
+
+
+
         addSubSelection(selection) {
             this.children.push(selection);
             return this;
