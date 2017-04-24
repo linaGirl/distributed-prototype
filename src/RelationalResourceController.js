@@ -596,9 +596,11 @@
                 response.onBeforeSend = () => {
                     if (response.data && response.data.length) response.data = response.data[0];
                     else {
-                        response.status = 'notFound';
-                        response.data = undefined;
-                        response.message = `Could not load the ${this.getServiceName()}/${this.getName()} with the key ${request.resourceId}!`;
+                        if (response.status === 'ok') {
+                            response.status = 'notFound';
+                            response.data = undefined;
+                            response.message = `Could not load the ${this.getServiceName()}/${this.getName()} with the key ${request.resourceId}!`;
+                        }
                     }
                 };
 
