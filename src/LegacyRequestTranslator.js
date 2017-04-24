@@ -566,6 +566,13 @@
 
 
 
+
+
+
+
+
+
+
         convertIncomingSelection(request, service) {
             const selections = [];
 
@@ -575,10 +582,11 @@
 
                     // check for containedd service in the collection
                     let resource = subRequest.getCollection();
+                    let localService = service;
                     const index = resource.indexOf(':');
 
                     if (index >= 0) {
-                        service = resource.substr(0, index);
+                        localService = resource.substr(0, index);
                         resource = resource.substr(index+1);
                     }
 
@@ -588,12 +596,12 @@
                           selection     : subRequest.getFields()
                         , filter        : this.convertIncomingObjectTree(subRequest.getFilters(), new FilterBuilder())
                         , resource      : resource
-                        , service       : service
+                        , service       : localService
                     });
 
                     selections.push(selection);
 
-                    const subSelections = this.convertIncomingSelection(subRequest, service);
+                    const subSelections = this.convertIncomingSelection(subRequest, localService);
                     if (subSelections && subSelections.length) selection.addSubSelections(subSelections);
                 });
             }
