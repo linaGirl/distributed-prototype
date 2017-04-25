@@ -512,6 +512,19 @@
             }
 
 
+            const order = [];
+            if (typeof legacyRequest.order === 'object') {
+                const keys = Object.keys(legacyRequest.order);
+
+                keys.forEach((property) => {
+                    order.push({
+                          property: property
+                        , desc: legacyRequest.order[property] && legacyRequest.order[property].toLowerCase() === 'desc'
+                    });
+                });
+            }
+
+
             const request = new RelationalRequest({
                   resource              : legacyRequest.collection
                 , action                : action
@@ -530,6 +543,7 @@
                 , options               : legacyRequest.getParameters()
                 , languages             : legacyRequest.languages
                 , responseFormats       : responseFormats
+                , order                 : order
             });
 
 

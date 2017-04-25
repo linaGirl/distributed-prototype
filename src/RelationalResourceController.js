@@ -1044,7 +1044,7 @@
             // make sure to select the filtered column
             const selection = relationalSelection.selection.slice(0);
             selection.push(relationDefinition.remote.property);
-            
+
             // get the relation
             return new RelationalRequest({
                   resource              : relationDefinition.remote.resource

@@ -310,6 +310,8 @@
                 if (property === '*') {
                     foreignSelections.add('*');
                     localSelections.add('*');
+                } else if (typeof property === 'object') {
+                    localSelections.add(property);
                 } else {
                     if (this.definition.hasProperty(property)) localSelections.add(property);
                     else foreignSelections.add(property);
@@ -318,7 +320,10 @@
 
 
             // create query, apply my filters
-            const query = this.db[this.tableName](Array.from(localSelections));
+            const query = this.db[this.tableName]([]);
+
+            // apply selection
+            this.applySelection(query, localSelections);
 
             // let the user apply filters
             this.applyFilter(query, request.filter);
@@ -326,6 +331,17 @@
             // apply limit & offset
             if (request.limit) query.limit(request.limit);
             if (request.offset) query.offset(request.offset);
+
+
+            // ordering
+            if (request.hasOrder()) {
+                for (const order of request.getOrder()) {
+                    if (order.desc) query.orderDesc(order.property);
+                    else query.order(order.property);
+                }
+            }
+
+
 
             // get data
             query.raw().find().then((data) => {
@@ -351,6 +367,32 @@
                     }).catch(err => response.error('query_error', `Failed to load relational selection!`, err));
                 });
             }).catch(err => response.error('db_error', `Failed to load ${this.name} resource!`, err));
+        }
+
+
+
+
+
+
+
+        /**
+        * apply selection sets to the query
+        */
+        applySelection(query, selectionSet) {
+            const parsedSelections = [];
+
+            for (const selection of selectionSet.values()) {
+                if (typeof selection === 'string') parsedSelections.push(selection);
+                else if (typeof selection === 'object') {
+
+                    // selection function
+                    if (selection.functionName === 'referenceCount') {
+                        parsedSelections.push(this.Related.select(selection.alias).referenceCount(selection.functionParameters[0]));
+                    } else throw new Error(`The selection function ${selection.functionName} is not supported by the framework!`);
+                } else throw new Error(`The selection of the type '${type(selection)} is not supported by the framework!`);
+            }
+
+            query.select(parsedSelections);
         }
 
 
