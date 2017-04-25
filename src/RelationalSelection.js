@@ -14,6 +14,7 @@
                 this.resource = options.resource;
                 this.service = options.service;
                 this.tokens = options.tokens;
+                this.languages = options.languages;
             }
 
             this.children = [];

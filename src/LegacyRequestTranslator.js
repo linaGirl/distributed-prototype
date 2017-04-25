@@ -598,6 +598,7 @@
                         , filter        : this.convertIncomingObjectTree(subRequest.getFilters(), new FilterBuilder())
                         , resource      : resource
                         , service       : localService
+                        , languages     : request.getLanguages()
                     });
 
                     selections.push(selection);
