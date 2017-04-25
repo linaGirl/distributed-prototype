@@ -397,7 +397,8 @@
                     case 'seeOther':
                     case 'accepted':
                     case 'noContent':
-                        legacyResponse.setHeader('Location', `/${response.data.serviceName}.${response.data.resourceName}/${response.data.id}`);
+                        if (response.data && response.data.id && typeof response.data.id === 'string' && /^https?:\/\//i.test(response.data.id)) legacyResponse.setHeader('Location', response.data.id);
+                        else legacyResponse.setHeader('Location', `/${response.data.serviceName}.${response.data.resourceName}/${response.data.id}`);
                         break;
 
                     case 'invalidAction':
