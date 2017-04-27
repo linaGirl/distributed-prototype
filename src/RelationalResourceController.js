@@ -998,9 +998,11 @@
             selection.children.push(relationalSelection);
 
 
-            return this.loadRelationalRecords(this.getRelation(relationDefinition.via.service, relationDefinition.via.resource), selection, records, originRequest).then((results) => {
+            const intermediateRelationDefinition = this.getRelation(relationDefinition.via.service, relationDefinition.via.resource);
 
-                // create a map for the input rtecords
+            return this.loadRelationalRecords(intermediateRelationDefinition, selection, records, originRequest).then((results) => {
+
+                // create a map for the input records
                 const recordMap = new Map();
                 records.forEach(r => recordMap.set(r[relationDefinition.property], r));
 
@@ -1011,7 +1013,15 @@
                         const localRecord = recordMap.get(resultRecord[relationDefinition.via.localProperty]);
 
                         if (!localRecord[relationDefinition.name]) localRecord[relationDefinition.name] = [];
-                        localRecord[relationDefinition.name].push(resultRecord[relationDefinition.name]);
+
+                        if (resultRecord[relationDefinition.name]) localRecord[relationDefinition.name].push(resultRecord[relationDefinition.name]);
+                        else {
+                            localRecord[relationDefinition.name].push({
+                                  status: 'error'
+                                , code: 'remote_loading_error'
+                                , message: `Failed to load remote record from ${relationDefinition.remote.service}/${relationDefinition.remote.resource}. The record doesn't exist on the remote resource!`
+                            });
+                        }
                     }
                 });
 

@@ -348,8 +348,7 @@
                 return response.executeHook('afterListQuery', data).then(() => {
 
                     // load related dats selected by the user
-                    this.loadRelationanlSelections(request, data).then(() => {
-
+                    this.loadRelationanlSelections(request, data).then(() => { 
 
                         // load locale data
                         this.loadLocaleData({
