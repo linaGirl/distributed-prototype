@@ -5,6 +5,7 @@
 
 
     const log = require('ee-log');
+    const debug = process.argv.includes('--debug-service');
 
 
 
@@ -31,10 +32,14 @@
                             try {
                                 returnValue = listener.apply(null, args);
                             } catch(err) {
+                                if (debug) log(err);
                                 return Promise.reject(err);
                             }
 
-                            if (returnValue instanceof Error) return Promise.reject(err);
+                            if (returnValue instanceof Error) {
+                                if (debug) log(returnValue);
+                                return Promise.reject(err);
+                            }
                             if (typeof returnValue === 'object' && typeof returnValue.then === 'function') return returnValue;
                             else return Promise.resolve();
                         }).then(() => {

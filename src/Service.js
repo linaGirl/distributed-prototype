@@ -54,7 +54,7 @@
         /**
         * the service has to shut dwon
         */
-        end() {
+        end() { 
             return Promise.all(Array.from(this.resources.values()).map(resourceController => resourceController.end()));
         }
 
@@ -386,7 +386,7 @@
 
 
                 log.info(`[Distributed][${id}] Incoming request on ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} ...`);
-                response.onAfterSend = () => {
+                response.onSend = () => {
                     log.success(`[Distributed][${id}] Outgoing response from ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} with the status ${response.status}${type.array(response.data) ? ` and ${response.data.length} records` : '' } after ${Date.now()-start} ms...`);
                     clearInterval(timeout);
                 };

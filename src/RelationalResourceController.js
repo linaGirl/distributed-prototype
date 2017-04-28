@@ -975,7 +975,7 @@
                     }));
                 }
                 else if (relationDefinition.type === 'mapping') return this.loadRelationalMapping(relationDefinition, relationalSelection, records, originRequest);
-                else return Promise.reject(`The relation ${relationDefinition.name} has an invalif type ${relationDefinition.type}!`);
+                else return Promise.reject(`The relation ${relationDefinition.name} has an invalid type ${relationDefinition.type}!`);
             }
         }
 
