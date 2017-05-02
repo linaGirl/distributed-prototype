@@ -1,5 +1,7 @@
 #distributed-prototype
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/eventEmitter/distributed-prototype.svg)](https://greenkeeper.io/)
+
 prototype for the distributed framewor. implementing some first ideas how it could look!
 
 todo:
