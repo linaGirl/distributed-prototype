@@ -16,16 +16,16 @@
     }
     , "dependencies": {
           "ee-types"                        : "2.x"
-        , "ee-log"                          : "1.x"
+        , "ee-log"                          : "^2.0.2"
         , "leaky-bucket"                    : "2.x"
         , "ee-soa-rpc-request"              : "0.2.x"
-        , "cachd"                           : "1.x"
-        , "inquirer"                        : "1.x"
+        , "cachd"                           : "^2.0.0"
+        , "inquirer"                        : "^3.0.6"
         , "express"                         : "4.x"
         , "distributed-http-header-parser"  : "0.1.x"
     }
     , "devDependencies": {
-          "mocha"                           : "2.x"
+          "mocha"                           : "^3.3.0"
     }
     , "optionalDependencies": {}
     , "keywords"                            : ["distributed", "prototype"]
