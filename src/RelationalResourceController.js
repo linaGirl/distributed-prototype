@@ -1150,6 +1150,73 @@
 
 
 
+
+        /**
+        * get all filternodes that match the properties passed to this method
+        */
+        findFilterNodes(filter, {resource, property, comparator, value} = {}) {
+            const results = [];
+
+            this.findFilterNode({filter, resource, property, comparator, value}, 'resource', results);
+
+            return results;
+        }
+
+
+
+
+
+        /**
+        * find a filter node by its properties
+        */
+        findFilterNode({filter, resource, property, comparator, value}, matchLevel, results) {
+
+            // the resource is optional
+            if (matchLevel === 'resource' && !resource) matchLevel = 'property';
+
+            // the property is optional too
+            if (matchLevel === 'property' && !property) matchLevel = 'comparator';
+
+            // the comparator is optional too
+            if (matchLevel === 'comparator' && !comparator) matchLevel = 'value';
+
+
+
+            if (filter.type === matchLevel) {
+                switch (matchLevel) {
+                    case 'resource':
+                        if (filter.entityName === resource) filter.children.forEach(filter => this.findFilterNode({filter, resource, property, comparator, value}, 'property', results));
+                        return;
+
+                    case 'property':
+                        if (filter.propertyName === property) {
+                            if (comparator === undefined) {
+                                if (value === undefined) results.push(filter);
+                                else filter.children.forEach(filter => this.findFilterNode({filter, resource, property, comparator, value}, 'comparator', results));
+                            } else filter.children.forEach(filter => this.findFilterNode({filter, resource, property, comparator, value}, 'comparator', results));
+                        }
+                        return;
+
+                    case 'comparator':
+                        if (comparator === undefined) {
+                            if (value === undefined) results.push(filter);
+                            else filter.children.forEach(filter => this.findFilterNode({filter, resource, property, comparator, value}, 'value', results));
+                        } else if (filter.comparator === comparator) filter.children.forEach(filter => this.findFilterNode({filter, resource, property, comparator, value}, 'value', results));
+                        return;
+
+                    case 'value':
+                        if (value === undefined || filter.nodeValue === value) results.push(value);
+                        return;
+
+                }
+            } else filter.children.forEach(filter => this.findFilterNode({filter, resource, property, comparator, value}, matchLevel, results));
+        }
+
+
+
+
+
+
         combineRemoteRecords(definition, localRecords, remoteRecords) {
 
             if (remoteRecords && remoteRecords.length) {

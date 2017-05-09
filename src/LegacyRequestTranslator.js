@@ -638,7 +638,7 @@
         convertIncomingFilter(request) {
             const filter = new FilterBuilder();
             this.convertIncomingObjectTree(request.getFilters(), filter);
-            return filter && filter.children.length ? filter: null;
+            return filter && filter.children.length ? filter.toJSON() : null;
         }
 
 
