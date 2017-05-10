@@ -1157,7 +1157,7 @@
         findFilterNodes(filter, {resource, property, comparator, value} = {}) {
             const results = [];
 
-            this.findFilterNode({filter, resource, property, comparator, value}, 'resource', results);
+            if (filter) this.findFilterNode({filter, resource, property, comparator, value}, 'resource', results);
 
             return results;
         }
