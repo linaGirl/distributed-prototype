@@ -527,7 +527,6 @@
                 if (query.buildFilter) query.buildFilter(filter);
                 else {
                     const relatedFilter = this.applyRelatedFilter(filter);
-                    log(relatedFilter);
                     if (relatedFilter) query.queryBuilder().and(relatedFilter);
                 }
             }
