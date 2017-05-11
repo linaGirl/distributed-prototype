@@ -523,10 +523,17 @@
 
 
         applyFilter(query, filter) {
-            if (!filter) return;
-            const relatedFilter = this.applyRelatedFilter(filter);
-            if (relatedFilter) query.queryBuilder().and(relatedFilter);
+            if (filter) {
+                if (query.buildFilter) query.buildFilter(filter);
+                else {
+                    const relatedFilter = this.applyRelatedFilter(filter);
+                    log(relatedFilter);
+                    if (relatedFilter) query.queryBuilder().and(relatedFilter);
+                }
+            }
         }
+
+
 
 
 
