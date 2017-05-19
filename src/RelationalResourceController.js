@@ -140,24 +140,26 @@
                             return languageIds.indexOf(a[config.remote.languageProperty]) - languageIds.indexOf(b[config.remote.languageProperty]);
                         });
 
-                        // apply row by row, not that fast, but there should never too mcuh data
+                        // apply row by row, not that fast, but there should never too much data
                         for (const locale of data) {
                             const localeProperties = Object.keys(locale).filter(column => !blacklistendColumns.includes(column));
                             const currentRow = localRowMap.get(locale[config.remote.property]);
 
-                            // iterat
-                            for (const property of localeProperties) {
-                                const value = locale[property];
-                                const localValue = currentRow[property];
+                            // iterate if it exists
+                            if (currentRow) {
+                                for (const property of localeProperties) {
+                                    const value = locale[property];
+                                    const localValue = currentRow[property];
 
-                                if (value !== null && 
-                                    value !== undefined &&
-                                    currentRow && (
-                                        localValue === null ||
-                                        localValue === undefined ||
-                                        localValue === "")) {
+                                    if (value !== null && 
+                                        value !== undefined &&
+                                        currentRow && (
+                                            localValue === null ||
+                                            localValue === undefined ||
+                                            localValue === "")) {
 
-                                    currentRow[property] = value;
+                                        currentRow[property] = value;
+                                    }
                                 }
                             }
                         }                    

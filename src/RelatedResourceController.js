@@ -296,6 +296,9 @@
 
         list(request, response) {
 
+            // add the primary keys
+            if (this.definition.hasPrimaryIds()) this.definition.primaryIds.forEach(id => request.selection.push(id));
+
 
             // we need to select foreign keys if we're 
             // loading references
