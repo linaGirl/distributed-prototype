@@ -50,6 +50,7 @@
     methodMap.set('createOrUpdateOne', 'PUT');
     methodMap.set('delete', 'DELETE');
     methodMap.set('deleteOne', 'DELETE');
+    methodMap.set('describe', 'OPTIONS');
 
 
     const debug = process.argv.indexOf('debug-service') >= 0 || process.env.debugService;
