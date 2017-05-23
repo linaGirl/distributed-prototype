@@ -237,6 +237,14 @@
 
                                 // apply update to all records
                                 records.forEach((record) => {
+
+                                    // empty inegers that are delivered as empty strings must be set to null
+                                    if (request.data && typeof request.data === 'object' && request.data !== null) {
+                                        for (const property of this.definition.properties.values()) {
+                                            if (request.data[property.name] === '' && property.representation === 'number') request.data[property.name] = null;
+                                        }
+                                    }
+
                                     record.setValues(request.data);
 
                                     if (this.definition.hasPrimaryId()) ids.push(record[this.definition.primaryId]);
@@ -297,7 +305,7 @@
         list(request, response) {
 
             // add the primary keys
-            if (this.definition.hasPrimaryIds()) this.definition.primaryIds.forEach(id => request.selection.push(id));
+            if (this.definition.hasPrimaryIds()) this.definition.primaryIds.forEach(id => request.addSelection(id));
 
 
             // we need to select foreign keys if we're 
