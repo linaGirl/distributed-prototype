@@ -5,9 +5,10 @@
     const Hook = require('./Hook');
     const type = require('ee-types');
     const log = require('ee-log');
+    const Logger = require('./Logger');
     const debug = process.argv.includes('--debug-service') || process.env.debugService;
 
-
+    const logger = debug ? new Logger('d') : null;
 
     let requestId = 0;
 
@@ -317,9 +318,25 @@
 
             
             if (debug) {
-                log.debug(`[Distributed] Outgoing request to ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action}...`);
-                response.onAfterSend = () => {
-                    log.info(`[Distributed] Incoming response from ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} with the status ${response.status}...`);
+                const start = Date.now();
+                const logId = logger.request({
+                      outgoing: true
+                    , action: request.action
+                    , service: request.service
+                    , resource: request.resource
+                    , resourceId: request.resourceId
+                    , remoteService: request.remoteService
+                    , remoteResource: request.remoteResource
+                    , remoteResourceId: request.remoteResourceId
+                });
+
+                response.onSend = () => {
+                    logger.response({
+                          id: logId
+                        , status: response.status
+                        , time: Date.now()-start 
+                        , comment: response.hasError() ? response.toError().message : ''
+                    });
                 };
             }
 
@@ -377,17 +394,34 @@
 
 
             if (debug) {
-                const id = ++requestId;
                 const start = Date.now();
+                const logId = logger.request({
+                      action: request.action
+                    , service: request.service
+                    , resource: request.resource
+                    , resourceId: request.resourceId
+                    , remoteService: request.remoteService
+                    , remoteResource: request.remoteResource
+                    , remoteResourceId: request.remoteResourceId
+                });
+
 
                 const timeout = setInterval(() => {
-                    log.warn(`[${id}] Long running request on ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action}!`);
-                }, 1000);
+                    logger.waiting({
+                          id: logId
+                        , time: Date.now()-start 
+                    });
+                }, 5000);
 
 
-                log.info(`[Distributed][${id}] Incoming request on ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} ...`);
                 response.onSend = () => {
-                    log.success(`[Distributed][${id}] Outgoing response from ${request.service}/${request.resource}${request.resourceId ? `/${request.resourceId}` : ''} -> ${request.action} with the status ${response.status}${type.array(response.data) ? ` and ${response.data.length} records` : '' } after ${Date.now()-start} ms...`);
+                    logger.response({
+                          id: logId
+                        , status: response.status
+                        , time: Date.now()-start 
+                        , comment: response.hasError() ? response.toError().message : ''
+                    });
+
                     clearInterval(timeout);
                 };
             }

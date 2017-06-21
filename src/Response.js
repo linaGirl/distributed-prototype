@@ -161,6 +161,25 @@
 
 
 
+        hasError() {
+            switch (this.status) {
+                case 'authorizationRequired': 
+                case 'tooManyRequests':
+                case 'forbidden':
+                case 'serviceUnavailable':
+                case 'badRequest':
+                case 'invalidAction':
+                case 'conflict':
+                case 'notFound':
+                case 'error':
+                case undefined:
+                case null:
+                    return true;
+            }
+        }
+
+
+
 
         /**
          * creates a proper error for each status
