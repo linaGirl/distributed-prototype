@@ -56,7 +56,7 @@
 
 
         error(code, message, err) {
-            if (debug && err) log(err);
+            // if (debug && err) log(err);
 
             this.err = (err ? (err instanceof Error ? err : new Error(err)) : null);
             this.code = code;
