@@ -22,8 +22,9 @@
 
 
         get id() {
-            if (this.idCounter > 9999999) this.idCounter = 0;
-            return (++this.idCounter)+'';
+            if (!process.__dsitributed_logger_counter) process.__dsitributed_logger_counter = 1;
+            if (process.__dsitributed_logger_counter > 9999999) process.__dsitributed_logger_counter = 0;
+            return (++process.__dsitributed_logger_counter)+'';
         }
 
 
@@ -50,6 +51,7 @@
                     , remoteService: config.remoteService
                     , remoteResource: config.remoteResource
                     , remoteResourceId: config.remoteResourceId
+                    , sourceService: config.sourceService
                 });
             }
         }
@@ -78,6 +80,7 @@
                     , remoteService: config.remoteService
                     , remoteResource: config.remoteResource
                     , remoteResourceId: config.remoteResourceId
+                    , sourceService: config.sourceService
                 });
             }
         }
@@ -87,7 +90,7 @@
 
 
 
-        request({action, resource, comment, outgoing, service, resourceId, remoteService, remoteResource, remoteResourceId}) {
+        request({action, resource, comment, outgoing, service, resourceId, remoteService, remoteResource, remoteResourceId, sourceService}) {
             const id = this.id;
 
 
@@ -103,6 +106,7 @@
                 , remoteService: remoteService
                 , remoteResource: remoteResource
                 , remoteResourceId: remoteResourceId
+                , sourceService: sourceService
             });
 
 
@@ -115,6 +119,7 @@
                 , remoteService
                 , remoteResource
                 , remoteResourceId
+                , sourceService
             });
 
 
@@ -138,11 +143,22 @@
             , remoteService = ''
             , remoteResource = ''
             , remoteResourceId = ''
+            , sourceService = ''
         }) {
             let text = `${this.framework}`+' | '.grey;
 
-            text += `${incoming ? '⇢'.blue : '⇠'.cyan} `;
-            text += `${(isRequest ? 'req'.blue : 'res'.green)}`.grey+' | '.grey;
+            if (incoming) {
+                if (isRequest) text += `${'⇢'.blue.bold} ${'req'.blue.bold}`.grey+' | '.grey;
+                else text += `${'⇢'.green} ${'res'.green}`.grey+' | '.grey;
+                
+            } else {
+                if (isRequest) text += `${'req'.blue} ${'⇢'.blue}`.grey+' | '.grey;
+                else text += `${'res'.green.bold} ${'⇢'.green.bold}`.grey+' | '.grey;
+                
+            }
+            //text += `${incoming ? '⇢'.blue.bold : '⇠'.cyan} `;
+            //if (incoming) text += `${(isRequest ? 'req'.blue.bold : 'res'.green.bold)}`.grey+' | '.grey;
+            //else text += `${(isRequest ? 'req'.blue : 'res'.green)}`.grey+' | '.grey;
             text += `${this.pad(id, 9)}`.grey+' │ '.grey;
 
 
@@ -151,7 +167,8 @@
             else text += `${this.pad(time+' ms', 7)}`.grey+' │ '.grey;
             
 
-            text += `${this.fill(action, 22)}`.magenta.bold+' | '.grey;
+            if (incoming & isRequest || !incoming && !isRequest) text += `${this.fill(action, 22)}`.blue.bold+' | '.grey;
+            else text += `${this.fill(action, 22)}`.blue+' | '.grey;
             
 
             if (status === 'ok') text += `${this.fill(status, 22)}`.green+' | '.grey;
@@ -159,14 +176,24 @@
             else text += `${this.fill(status, 22)}`.yellow+' | '.grey;
 
 
-            text += service.blue;
-            text += '/'.grey+resource.white;
+            text += `${this.fill(sourceService, 16)}`.grey+' | '.grey;
 
-            
-            if (resourceId) text += '/'.grey+resourceId.cyan;
-            if (remoteService && remoteResource) text += '/'.grey+remoteService.blue;
-            if (remoteResource) text += '/'.grey+remoteResource.white;
-            if (remoteResourceId) text += '/'.grey+remoteResourceId.cyan;
+
+            if (incoming & isRequest || !incoming && !isRequest) {
+                text += service.blue;
+                text += '/'.grey+resource.white;
+                if (resourceId) text += '/'.grey+resourceId.cyan;
+                if (remoteService && remoteResource) text += '/'.grey+remoteService.blue;
+                if (remoteResource) text += '/'.grey+remoteResource.white;
+                if (remoteResourceId) text += '/'.grey+remoteResourceId.cyan;
+            } else {
+                text += service.grey;
+                text += '/'.grey+resource.grey;
+                if (resourceId) text += '/'.grey+resourceId.grey;
+                if (remoteService && remoteResource) text += '/'.grey+remoteService.grey;
+                if (remoteResource) text += '/'.grey+remoteResource.grey;
+                if (remoteResourceId) text += '/'.grey+remoteResourceId.grey;
+            }
             
             text += `${(comment ? '   ➟  ' : '')+comment.grey}`;
 
