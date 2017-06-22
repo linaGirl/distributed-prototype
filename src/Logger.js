@@ -163,7 +163,7 @@
 
             if (time < 500) text += `${this.pad(time+' ms', 7)}`.grey+' │ '.grey;
             else if (time >= 500 && time < 1000) text += `${this.pad(time+' ms', 7)}`.yellow+' │ '.grey;
-            else text += `${this.pad(time+' ms', 7)}`.grey+' │ '.grey;
+            else text += `${this.pad(time+' ms', 7)}`.red.bold+' │ '.grey;
             
 
             if (incoming & isRequest || !incoming && !isRequest) text += `${this.fill(action, 22)}`.blue.bold+' │ '.grey;
