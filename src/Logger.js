@@ -148,17 +148,16 @@
             let text = `${this.framework}`+' | '.grey;
 
             if (incoming) {
-                if (isRequest) text += `${'⇢'.blue.bold} ${'req'.blue.bold}`.grey+' | '.grey;
-                else text += `${'⇢'.green} ${'res'.green}`.grey+' | '.grey;
+                if (isRequest) text += `${'⇢'.blue.bold} ${'req'.blue.bold}`.grey+' │ '.grey;
+                else text += `${'⇢'.green} ${'res'.green}`.grey+' │ '.grey;
                 
             } else {
-                if (isRequest) text += `${'req'.blue} ${'⇢'.blue}`.grey+' | '.grey;
-                else text += `${'res'.green.bold} ${'⇢'.green.bold}`.grey+' | '.grey;
+                if (isRequest) text += `${'req'.blue} ${'⇢'.blue}`.grey+' │ '.grey;
+                else text += `${'res'.green.bold} ${'⇢'.green.bold}`.grey+' │ '.grey;
                 
             }
-            //text += `${incoming ? '⇢'.blue.bold : '⇠'.cyan} `;
-            //if (incoming) text += `${(isRequest ? 'req'.blue.bold : 'res'.green.bold)}`.grey+' | '.grey;
-            //else text += `${(isRequest ? 'req'.blue : 'res'.green)}`.grey+' | '.grey;
+
+            
             text += `${this.pad(id, 9)}`.grey+' │ '.grey;
 
 
@@ -167,16 +166,16 @@
             else text += `${this.pad(time+' ms', 7)}`.grey+' │ '.grey;
             
 
-            if (incoming & isRequest || !incoming && !isRequest) text += `${this.fill(action, 22)}`.blue.bold+' | '.grey;
-            else text += `${this.fill(action, 22)}`.blue+' | '.grey;
+            if (incoming & isRequest || !incoming && !isRequest) text += `${this.fill(action, 22)}`.blue.bold+' │ '.grey;
+            else text += `${this.fill(action, 22)}`.grey+' │ '.grey;
             
 
-            if (status === 'ok') text += `${this.fill(status, 22)}`.green+' | '.grey;
-            else if (status === 'error' || status === 'service_exception') text += `${this.fill(status, 22)}`.red.bold+' | '.grey;
-            else text += `${this.fill(status, 22)}`.yellow+' | '.grey;
+            if (status === 'ok') text += `${this.fill(status, 22)}`.green+' │ '.grey;
+            else if (status === 'error' || status === 'service_exception') text += `${this.fill(status, 22)}`.red.bold+' │ '.grey;
+            else text += `${this.fill(status, 22)}`.yellow+' │ '.grey;
 
 
-            text += `${this.fill(sourceService, 16)}`.grey+' | '.grey;
+            text += `${this.fill(sourceService, 16)}`.grey+' │ '.grey;
 
 
             if (incoming & isRequest || !incoming && !isRequest) {
