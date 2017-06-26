@@ -127,6 +127,14 @@
             } else if (type.number(request.limit)) range = `0-${request.offset+request.limit}`;
 
 
+            // response formats
+            let accept = [];
+            if (request.reponseFormat) {
+                for (const format of request.reponseFormat) {
+                    accept.push(format);
+                }
+            }
+
             return new this.RPCRequest({
                   filter        : this.convertToLegacyFilter(request.filter)
                 , select        : this.convertToLegaySelection(request)
@@ -137,6 +145,7 @@
                 , range         : range
                 , order         : (request.order || []).join(', ')
                 , accessTokens  : request.tokens
+                , accept        : accept.join(',')
             }).convert().then((result) => {// log(result);
 
 
