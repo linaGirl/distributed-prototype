@@ -216,6 +216,8 @@
                         case 202:   return response.accepted(data.id);
                         case 204:   return response.noContent(data.id);
                         case 303:   return response.seeOther(data.id);
+                        case 20:    return response.seeOther(result.response.headers.Location);
+                        case 21:    return response.seeOther(result.response.headers.Location);
                         case 26:    return response.notFound(`The requested resource was not found!`);
                         case 80:    return response.conflict(`There was a conflict on the requested resource!`);
                         case 23:    return response.badRequest('legacy_error', `The request was malformed!`);
