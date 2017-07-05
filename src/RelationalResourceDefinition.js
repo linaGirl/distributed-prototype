@@ -14,7 +14,7 @@
 
         constructor(options) {
             if (options) {
-                if (options.primaryIds) this.primaryIds = options.primaryIds;
+                if (options.primaryIds) this.setPrimaryIds(options.primaryIds);
                 if (options.name) this.name = options.name;
             }
 
@@ -61,7 +61,7 @@
 
 
         setPrimaryIds(primaryIds) {
-            this.primaryIds = primaryIds;
+            this.primaryIds = primaryIds.sort();
         }
     }
 })();
