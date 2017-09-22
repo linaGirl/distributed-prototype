@@ -22,7 +22,8 @@
         "ee-types": "2.x",
         "express": "4.x",
         "inquirer": "1.x",
-        "leaky-bucket": "2.x"
+        "leaky-bucket": "2.x",
+        "section-tests": "^1.2.6"
     },
     "devDependencies": {
         "mocha": "3.x"

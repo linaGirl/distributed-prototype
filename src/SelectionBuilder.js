@@ -77,7 +77,7 @@
         }
 
 
-         get rootSelection() {
+        get rootSelection() {
             return this.root.children;
         }
     };

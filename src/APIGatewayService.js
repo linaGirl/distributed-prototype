@@ -3,13 +3,23 @@
 
 
 
-    const Server    = require('./Server');
-    const Service   = require('./Service');
-    const type      = require('ee-types');
-    const log       = require('ee-log');
-    const Parser    = require('./APIGatewayParser');
+    const Server            = require('./Server');
+    const Service           = require('./Service');
+    const type              = require('ee-types');
+    const log               = require('ee-log');
+    const Parser            = require('./APIGatewayParser');
+    const RequestBuilder    = require('./APIGatewayRequestBuilder');
+    const crypto            = require('crypto');
 
 
+
+    const DeleteRequestProcessor = require('./requestProcessor/Delete');
+    const GetRequestProcessor = require('./requestProcessor/Get');
+    const HeadRequestProcessor = require('./requestProcessor/Head');
+    const OptionsRequestProcessor = require('./requestProcessor/Options');
+    const PatchRequestProcessor = require('./requestProcessor/Patch');
+    const PostRequestProcessor = require('./requestProcessor/Post');
+    const PutRequestProcessor = require('./requestProcessor/Put');
 
 
 
@@ -37,8 +47,28 @@
             });
 
 
+            // request builder: takes the output of the
+            // parser and creates requests from it
+            this.requestBuilder = new RequestBuilder();
+
+
             // multithread header parser
             this.parser = new Parser();
+
+
+
+            // load the different request processors
+            this.processors = new Map([
+                ['delete', new DeleteRequestProcessor({parser: this.parser})],
+                ['get', new GetRequestProcessor({parser: this.parser})],
+                ['head', new HeadRequestProcessor({parser: this.parser})],
+                ['options', new OptionsRequestProcessor({parser: this.parser})],
+                ['patch', new PatchRequestProcessor({parser: this.parser})],
+                ['post', new PostRequestProcessor({parser: this.parser})],
+                ['put', new PutRequestProcessor({parser: this.parser})],
+            ]);
+
+
 
 
             // register this as middleware on the server
@@ -52,35 +82,66 @@
         /**
          * express middleware
          */
-        route(req, res) {
-            let filter, select, order;
+        route(request, response) {
+            const action = request.method.toLowerCase();
+            const requestId = this.createRandomId();
 
 
-            this.parser.parse({
-                  filter    : req.headers.filter
-                , selector  : req.headers.select
-                , order     : req.headers.order
-            }).then((data) => {
-                res.send(data);
-            }).catch((err) => {
-                if (err.message.startsWith('Failed to parse')) {
+            if (this.processors.has(action)) {
 
-                    // header parser problems
-                    res.status(400).send({
-                          status: 'badRequest'
-                        , code: 'parser_error'
-                        , message: err.message
-                    });
-                } else {
+                // let specialized classes do the work
+                this.processors.get(action).processRequest({
+                    request, 
+                    response,
+                    requestId,
+                    action,
+                }).catch((err) => {
+                    if (err instanceof Error) {
+                        
+                        // log info, this should never happen
+                        log.warn(`Uncaught error for request ${requestId}`, {
+                            method: action,
+                            requestId: requestId,
+                            url: request.url,
+                            rawHeaders: request.rawHeaders,
+                        });
+                        
+                        log(err);
+                        
+                        // don't tell the client any details
+                        response.status(500).send({
+                            status: 500,
+                            code: 'server_error',
+                            description: `The server encountered an error while processing the request. Request-id: ${requestId}`
+                        });
+                    } else if (type.object(err) && err.status && err.code) {
 
-                    // go for server errors
-                    res.status(500).send({
-                          status: 'serverError'
-                        , code: 'handler_error'
-                        , message: err.message
-                    });
-                }
-            });
+                        // custom parser error
+                        response.status(err.status).send({
+                            status: err.status,
+                            code: err.code,
+                            description: err.description
+                        });
+                    }
+                });
+            } else {
+                response.status(405).send({
+                    status: 405,
+                    code: 'method_not_allowed',
+                    description: `The ${action} is not supported by this server`
+                });
+            }
+        }
+
+
+
+
+
+        /**
+        * create a random request id for the error reporter
+        */
+        createRandomId() {
+            return crypto.createHash('sha256').update(String(Math.random())).digest('hex')
         }
 
 

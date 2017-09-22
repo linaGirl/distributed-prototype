@@ -242,14 +242,14 @@
 
 
         /**
-        * sends the request using the passed gatewa
+        * sends the request using the passed gateway
         * and creates and returns the response as soon it 
         * was sent by the other side
         */
         send(gateway) {
             this.response = this.createResponse();
 
-            // validate outgoing requests, repond
+            // validate outgoing requests, respond
             // directly on error!
             try {
                 this.validate();

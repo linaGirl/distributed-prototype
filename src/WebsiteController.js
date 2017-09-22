@@ -21,6 +21,17 @@
 
 
 
+        
+
+        setServiceName(serviceName) {
+            this.serviceName = serviceName;
+        }
+
+        getServiceName() {
+            return this.serviceName;
+        }
+
+
 
 
 
