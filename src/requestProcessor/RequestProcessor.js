@@ -14,7 +14,17 @@
         constructor({
             parser
         }) {
+            // the slect & filter header infrastructure
+            // it's passed into this class beause it uses 
+            // a shitload of resources.
             this.parser = parser;
+
+            // the headers get parsed by header specific
+            // parser classes. they can be registered using
+            // the registerHeaderParser method. all headers 
+            // that are registered here will be applied to 
+            // each request.
+            this.headerParsers = new Map();
         }
 
 
@@ -22,16 +32,18 @@
 
 
         /**
-        * get basic info from the request that
-        * is common to all requests
+        * register a new headerParser on the class
         */
-        async getRequestConfiguration(request) {
-            const config = await this.parseURL(request.url);
+        registerHeaderParser(parser) {
+            const headerName = parser.getHeaderName();
 
-            // extract authorization tokens
-            config.authorizationTokens = await this.getAuthorizationTokens(request);
-
-            return config;
+            // one cannot overwrite existing parsers, that's
+            // likely an user error
+            if (this.headerParsers.has(headerName)) {
+                throw new Error(`Cannot register parser for header ${headerName}, there is already a parser registered for that header!`);
+            } else {
+                this.headerParsers.set(headerName, parser);
+            }
         }
 
 
@@ -40,195 +52,62 @@
 
 
 
+        /**
+        * parse all headers using the availabe parsers
+        */
+        async parseHeaders(request) {
+            
+            // get a clean array of headers
+            const headers = this.normalizeHeaders(request);
+
+            // remove headers we're not processing, let the
+            // processor only process its only header values
+            for (const [headerName, headerValues] of headers.entries()) {
+
+                // get the right parser
+                const parser = this.headerParsers.get(headerName);
+
+                // get the values async
+                const headerValue = await parser.parse(headerValues);
+                
+
+                // replace the raw header values with the parsed values
+                headers.set(headerName, headerValue);
+            }
+
+            return headers;
+        }
+
+
+
+
 
 
         /**
-        * extract authorization tokens
+        * return a usable set of headers, which is nothing
+        * express.js is givin us for free :/
         */
-        async getAuthorizationTokens(request) {
+        normalizeHeaders(request) {
             const headers = request.rawHeaders;
-            const tokens = [];
+            const normalizedHeaders = new Map();
 
             // express, this is sad :/ headers are stored
             // in an array, alternating between name 
             // and value.
             for (let i = 0, l = headers.length; i < l; i+=2) {
-                // making sure not to process headers 
-                // with too long contents
-                if (headers[i].length < 20 && headers[i].trim().toLowerCase() === 'authorization') {
-                    if (headers[i+1].length < 100) {
-                        const match = /^([a-z0-9_-]+) ([a-z0-9_-]+)$/gi.exec(headers[i+1].trim());
+                const headerName = headers[i].trim().toLowerCase();
 
-                        if (match) {
-                            tokens.push({
-                                type: match[1].toLowerCase(),
-                                token: match[2]
-                            });
-                        } else {
-                            throw {
-                                status: 400,
-                                code: 'invalid_authorization_header',
-                                message: `Invalid authorization header. Header format 'Authorization:type token' (/authorization:[a-z0-9_-]+ [a-z0-9_-]+/i)`,
-                            };
-                        }
-                    }
+                // onyl returning header we have parsers for
+                if (this.headerParsers.has(headerName)) {
+                    if (!normalizedHeaders.has(headerName)) normalizedHeaders.set(headerName, []);
+                    normalizedHeaders.get(headerName).push(headers[i+1]);
                 }
             }
 
-            return tokens;
+            return normalizedHeaders;
         }
 
 
-
-
-
-
-
-        /**
-        * get the parsed select header from the request
-        */
-        async parseSelection({
-            request,
-            requestConfiguration,
-        }) {
-            const parsedData = await this.parser.parse({
-                selector: request.headers.select,
-            });
-
-
-            const selection = new SelectionBuilder();
-            let selectedProperties;
-
-
-            // transform the selection from parser output to 
-            // relational request input
-            if (parsedData.selector && parsedData.selector.children && parsedData.selector.children.length) {
-
-                // merge the trees gotten from the 
-                // header parser
-                const selectionTree = this.compactSelection({
-                    parserSelection: parsedData.selector.children,
-                    parentSelection: {
-                        children: new Map(),
-                        properties: new Set(),
-                    }
-                });
-
-
-                // need to return them separately
-                selectedProperties = Array.from(selectionTree.properties.values());
-
-
-                // now create the actual selection
-                // representation using the SelectionBuilder
-                this.buildSelection({
-                    selection: selection, 
-                    selectionTree: selectionTree, 
-                    serviceName: requestConfiguration.serviceName
-                });
-            }
-
-
-
-            return {
-                selection: selection,
-                properties: selectedProperties
-            };
-        }
-
-
-
-
-
-
-
-
-
-        /**
-        * create a relational selection from the selection
-        * tree we just built using the compactSelection 
-        * method.
-        */
-        buildSelection({
-            selection, 
-            selectionTree,
-            serviceName,
-        }) {
-            for (const [name, child] of selectionTree.children.entries()) {
-                const childSelection = selection.select(serviceName, child.name, Array.from(child.properties.values()));
-
-                this.buildSelection({
-                    selection: childSelection,
-                    selectionTree: child,
-                    serviceName: serviceName
-                });
-            }
-        }
-
-
-
-
-
-
-
-
-
-        /**
-        * get the parsed filter header from the request
-        */
-        async parseFilter(request) {
-            const parsedData = await this.parser.parse({
-                filter: request.headers.filter,
-            });
-
-
-            return parsedData && parsedData.filter;
-        }
-
-
-
-
-
-
-
-
-        /**
-        * the parser returns the output as an array of
-        * trees that may contain the same path. this
-        * method compacts the input into one tree.
-        */
-        compactSelection({
-            parserSelection,
-            parentSelection,
-        }) {
-
-            // iterate over all parsed nodes, group them per entity
-            // in the subSelections map
-            parserSelection.forEach((node) => {
-                if (node.type === 'entity') {
-                    if (!parentSelection.children.has(node.entityName)) {
-                        parentSelection.children.set(node.entityName, {
-                            children: new Map(),
-                            name: node.entityName,
-                            properties: new Set(),
-                        });
-                    }
-
-                    if (node.children.length) {
-                        this.compactSelection({
-                            parserSelection: node.children,
-                            parentSelection: parentSelection.children.get(node.entityName),
-                        });
-                    }
-                } else if (node.type === 'property') {
-                    parentSelection.properties.add(node.propertyName);
-                } else {
-                    throw new Error(`Invalid selection node type ${node.type}!`);
-                }
-            });
-
-            return parentSelection;
-        }
 
 
 
@@ -241,7 +120,7 @@
         * remoteService, remoteResource, remoteREsourceId
         * from the requests path part
         */
-        async parseURL(URLPath) {
+        async parseURL(request) {
             // so, lets see what the valid path patterns are:
             // /remoteService.remoteResource/remoteResourceId/service.resource/resourceId
             // /remoteService.remoteResource/remoteResourceId/service.resource
@@ -249,7 +128,7 @@
             // /service.resource
 
             // this shoudl catch all variants
-            const match = /^(?:\/([^\.\/\n]+)\.([^\/\n]+)\/([^\/\n]+))?\/([^\.\/\n]+)\.([^\/\n]+)(?:\/([^\/\n]+))?$/ig.exec(URLPath);
+            const match = /^(?:\/([^\.\/\n]+)\.([^\/\n]+)\/([^\/\n]+))?\/([^\.\/\n]+)\.([^\/\n]+)(?:\/([^\/\n]+))?$/ig.exec(request.url);
 
             if (match) {
                 return {
