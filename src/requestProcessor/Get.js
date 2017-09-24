@@ -88,7 +88,7 @@
                 remoteResource: urlParts.remoteResource,
                 remoteResourceId: urlParts.remoteResourceId,
                 filter: headers.get('filter'),
-                tokens: headers.get('authorization'),
+                tokens: headers.get('authorization').map(token => token.token),
                 action: action,
             });
 
