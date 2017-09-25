@@ -76,11 +76,10 @@
                 selectionTree: headers.get('select'),
                 serviceName: urlParts.service,
             });
-
             
             const distributedRequest = new RelationalRequest({
-                relationalSelection: selection.selection,
-                selection: selection.properties,
+                relationalSelection: selection,
+                selection: Array.from(headers.get('select').properties.values()),
                 service: urlParts.service,
                 resource: urlParts.resource,
                 resourceId: urlParts.resourceId,
@@ -93,8 +92,7 @@
             });
 
 
-            log({urlParts, headers});
-            log(distributedRequest);
+            return distributedRequest;
         }
 
 
