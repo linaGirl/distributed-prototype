@@ -37,6 +37,7 @@
     statusCodeMap.set('noContent', 204);
     statusCodeMap.set('accepted', 202);
     statusCodeMap.set('seeOther', 303);
+    statusCodeMap.set('tooManyRequests', 32);
 
 
     const methodMap = new Map();
@@ -232,7 +233,13 @@
                             if (rlHeader && rlHeader.length) limits = /(\d+)\/(\d+)s/.exec(rlHeader);
 
                             return response.tooManyRequests(limits ? parseInt(limits[2], 10) : 60, limits ? parseInt(limits[1], 10) : 0, parseInt(rlLeft ? rlLeft+'' : 0, 10));
-                        case 37: return response.error('legacy_error', `The legacy layer returned an error (${methodMap.get(request.action)} on ${url}${request.requestingService ? ` issued by the ${request.requestingService} service` : ''})!`, (data.err || new Error(data.msg)));
+                        case 37: {
+                            const match = /([0-9\.\-]+) credits per ([0-9\.\-]+) second. Left ([0-9\.\-]+)/gi.exec(data.msg || '');
+
+                            if (match) return response.tooManyRequests(parseInt(match[2], 10), parseInt(match[1], 10), parseInt(match[3], 10));
+                            else return response.error('legacy_error', `The legacy layer returned an error (${methodMap.get(request.action)} on ${url}${request.requestingService ? ` issued by the ${request.requestingService} service` : ''})!`, (data.err || new Error(data.msg)));
+                            break;
+                        }
                         default: return response.error('legacy_error', `The legacy layer returned an unknown status ${status}!`, (data.err || new Error(data.msg)));
                     }
                 });
@@ -424,6 +431,10 @@
                         errorData = response.toError().message; //`Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code})`
                         break;
 
+                    case 'tooManyRequests':
+                        errorData = `Rate limit exceeded! You have ${response.credits} credits per ${response.interval} second. Left ${response.creditsLeft}!`;
+                        break;
+
                     case 'error':
                         errorData = response.toError().message; //`Failed to execute the ${request.action} action on ${request.service}/${request.resource}: ${response.message} (${response.code}) ${response.err ? ' ('+response.err.message+')' : ''}`
                         break;
@@ -431,7 +442,7 @@
 
                 // check for a valid response code
                 if (!statusCodeMap.has(response.status)) {
-                    errorData = `Failed to translate the response status '${response.status}'' into a valid legacy statuscode on a request on ${request.action} ${request.service}/${request.resource}!`;
+                    errorData = `Failed to translate the response status '${response.status}' into a valid legacy statuscode on a request on ${request.action} ${request.service}/${request.resource}!`;
                     response.status = 'error';
                 }
 
