@@ -719,7 +719,7 @@
 
             // set permissions on local entity
             for (const action of this.actionRegistry) {
-                data.permissions[action] = permissions.isActionAllowed(this.getServiceName(), this.getName(), action);
+                data.permissions[action] = permissions.isActionAllowed(this.getServiceName(), this.getName(), action, true);
             }
 
 
