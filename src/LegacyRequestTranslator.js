@@ -558,7 +558,7 @@
                 , remoteService         : remoteService
                 , filter                : this.convertIncomingFilter(legacyRequest, service)
                 , selection             : legacyRequest.getFields()
-                , relationalSelection   : this.convertIncomingRelationalSelection(legacyRequest, service)
+                , relationalSelection   : this.convertIncomingRelationalSelection(legacyRequest, service, tokens)
                 , data                  : legacyRequest.content
                 , tokens                : tokens
                 , limit                 : ((range && range.to !== null) ? (range.to - (range.from || 0) + 1) : null)
@@ -586,8 +586,8 @@
 
 
 
-        convertIncomingRelationalSelection(request, service) {
-            const selections = this.convertIncomingSelection(request, service);
+        convertIncomingRelationalSelection(request, service, tokens) {
+            const selections = this.convertIncomingSelection(request, service, tokens);
 
             // store them, they may be used later
             const relationalSelection = new Map();
@@ -611,7 +611,7 @@
 
 
 
-        convertIncomingSelection(request, service) {
+        convertIncomingSelection(request, service, tokens) {
             const selections = [];
 
 
@@ -636,11 +636,12 @@
                         , resource      : resource
                         , service       : localService
                         , languages     : request.getLanguages()
+                        , tokens        : tokens
                     });
 
                     selections.push(selection);
 
-                    const subSelections = this.convertIncomingSelection(subRequest, localService);
+                    const subSelections = this.convertIncomingSelection(subRequest, localService, tokens);
                     if (subSelections && subSelections.length) selection.addSubSelections(subSelections);
                 });
             }
