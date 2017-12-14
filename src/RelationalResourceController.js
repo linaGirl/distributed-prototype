@@ -836,7 +836,7 @@
                                             definition.permissions.updateLink = (can('update') && has('update')) || (can('updateOne') && has('updateOne'));
                                             definition.permissions.deleteLink = (can('delete') && has('delete')) || (can('deleteOne') && has('deleteOne'));
                                         } else if (debugPermissions) {
-                                            log.debug(`Failed to get permissions for the resource ${definition.via.resource}/${definition.via.service}: ${response.toError()}`);
+                                            log.highlight(`Failed to get permissions for the resource ${definition.via.resource}/${definition.via.service}: ${response.toError()}`);
                                         }
 
                                         return Promise.resolve();

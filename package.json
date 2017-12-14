@@ -1,7 +1,7 @@
 {
     "name": "distributed-prototype",
     "description": "Prototoype implementation for the distributed framework",
-    "version": "2.28.5",
+    "version": "2.28.6",
     "homepage": "https://github.com/eventEmitter/distributed-prototype",
     "author": "Michael van der Weg <michael@vanderweg.com> (http://vanderweg.com/)",
     "repository": {
