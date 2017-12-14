@@ -1006,6 +1006,8 @@
                   resource: relationDefinition.via.resource
                 , selection: [relationDefinition.via.localProperty]
                 , service: relationDefinition.via.service
+                , languages: relationalSelection.languages
+                , tokens: relationalSelection.tokens
             });
 
             // add the oroginal selection as child
