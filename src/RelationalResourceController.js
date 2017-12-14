@@ -11,7 +11,7 @@
     const log = require('ee-log');
     const assert = require('assert');
 
-    const debugPermissions = process.argv.includes('--debug-distributed');
+    const debugDistributed = process.argv.includes('--debug-distributed');
 
 
 
