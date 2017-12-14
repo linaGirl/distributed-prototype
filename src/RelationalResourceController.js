@@ -11,7 +11,7 @@
     const log = require('ee-log');
     const assert = require('assert');
 
-    const debugPermissions = process.argv.includes('--debug-permissions');
+    const debugPermissions = process.argv.includes('--debug-distributed');
 
 
 
@@ -764,6 +764,8 @@
                                     definition.permissions.createLink = true;
                                     definition.permissions.updateLink = true;
                                     definition.permissions.deleteLink = true;
+                                } else if (debugDistributed) {
+                                    log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
                                 }
 
                                 return Promise.resolve();
@@ -790,6 +792,8 @@
                                     definition.permissions.createLink = definition.permissions.create || definition.permissions.createOne || false;
                                     definition.permissions.updateLink = definition.permissions.update || definition.permissions.updateOne || false;
                                     definition.permissions.deleteLink = definition.permissions.delete || definition.permissions.deleteOne || false;
+                                } else if (debugDistributed) {
+                                    log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
                                 }
 
                                 return Promise.resolve();
@@ -835,13 +839,18 @@
                                             definition.permissions.createLink = (can('create') && has('create')) || (can('createOne') && has('createOne'));
                                             definition.permissions.updateLink = (can('update') && has('update')) || (can('updateOne') && has('updateOne'));
                                             definition.permissions.deleteLink = (can('delete') && has('delete')) || (can('deleteOne') && has('deleteOne'));
-                                        } else if (debugPermissions) {
-                                            log.highlight(`Failed to get permissions for the resource ${definition.via.resource}/${definition.via.service}: ${response.toError()}`);
+                                        } else if (debugDistributed) {
+                                            log.highlight(`Failed to get permissions for the resource ${definition.via.resource}/${definition.via.service}: ${viaResponse.toError()}`);
                                         }
 
                                         return Promise.resolve();
                                     });
-                                } else return Promise.resolve();
+                                } else if (debugDistributed) {
+                                    log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
+                                }
+
+
+                                return Promise.resolve();
                             });
                         }
                         else  throw new Error(`Unknown relation ${relation.type}!`);
