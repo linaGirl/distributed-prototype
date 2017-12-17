@@ -11,6 +11,7 @@
     const log = require('ee-log');
     const assert = require('assert');
 
+    const debugDistributed = process.argv.includes('--debug-distributed');
 
 
 
@@ -719,7 +720,7 @@
 
             // set permissions on local entity
             for (const action of this.actionRegistry) {
-                data.permissions[action] = permissions.isActionAllowed(this.getServiceName(), this.getName(), action);
+                data.permissions[action] = permissions.isActionAllowed(this.getServiceName(), this.getName(), action, true);
             }
 
 
@@ -763,6 +764,8 @@
                                     definition.permissions.createLink = true;
                                     definition.permissions.updateLink = true;
                                     definition.permissions.deleteLink = true;
+                                } else if (debugDistributed) {
+                                    log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
                                 }
 
                                 return Promise.resolve();
@@ -789,6 +792,8 @@
                                     definition.permissions.createLink = definition.permissions.create || definition.permissions.createOne || false;
                                     definition.permissions.updateLink = definition.permissions.update || definition.permissions.updateOne || false;
                                     definition.permissions.deleteLink = definition.permissions.delete || definition.permissions.deleteOne || false;
+                                } else if (debugDistributed) {
+                                    log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
                                 }
 
                                 return Promise.resolve();
@@ -834,11 +839,18 @@
                                             definition.permissions.createLink = (can('create') && has('create')) || (can('createOne') && has('createOne'));
                                             definition.permissions.updateLink = (can('update') && has('update')) || (can('updateOne') && has('updateOne'));
                                             definition.permissions.deleteLink = (can('delete') && has('delete')) || (can('deleteOne') && has('deleteOne'));
+                                        } else if (debugDistributed) {
+                                            log.highlight(`Failed to get permissions for the resource ${definition.via.resource}/${definition.via.service}: ${viaResponse.toError()}`);
                                         }
 
                                         return Promise.resolve();
                                     });
-                                } else return Promise.resolve();
+                                } else if (debugDistributed) {
+                                    log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
+                                }
+
+
+                                return Promise.resolve();
                             });
                         }
                         else  throw new Error(`Unknown relation ${relation.type}!`);
@@ -994,6 +1006,8 @@
                   resource: relationDefinition.via.resource
                 , selection: [relationDefinition.via.localProperty]
                 , service: relationDefinition.via.service
+                , languages: relationalSelection.languages
+                , tokens: relationalSelection.tokens
             });
 
             // add the oroginal selection as child
