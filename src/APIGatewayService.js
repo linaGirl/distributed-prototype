@@ -3,13 +3,13 @@
 
 
 
-    const Server            = require('./Server');
-    const Service           = require('./Service');
-    const type              = require('ee-types');
-    const log               = require('ee-log');
-    const Parser            = require('./APIGatewayParser');
-    const RequestBuilder    = require('./APIGatewayRequestBuilder');
-    const crypto            = require('crypto');
+    const Server = require('./Server');
+    const Service = require('./Service');
+    const type = require('ee-types');
+    const log = require('ee-log');
+    const Parser = require('./APIGatewayParser');
+    const RequestBuilder = require('./APIGatewayRequestBuilder');
+    const crypto = require('crypto');
 
 
 
@@ -20,6 +20,14 @@
     const PatchRequestProcessor = require('./requestProcessor/Patch');
     const PostRequestProcessor = require('./requestProcessor/Post');
     const PutRequestProcessor = require('./requestProcessor/Put');
+
+
+    const GetResponseProcessor = require('./responseProcessor/Get');
+    const PostResponseProcessor = require('./responseProcessor/Post');
+    const OptionsResponseProcessor = require('./responseProcessor/Options');
+
+
+
 
 
 
@@ -58,7 +66,7 @@
 
 
             // load the different request processors
-            this.processors = new Map([
+            this.requestProcessors = new Map([
                 ['delete', new DeleteRequestProcessor({parser: this.parser})],
                 ['get', new GetRequestProcessor({parser: this.parser})],
                 ['head', new HeadRequestProcessor({parser: this.parser})],
@@ -68,6 +76,13 @@
                 ['put', new PutRequestProcessor({parser: this.parser})],
             ]);
 
+
+            // load the different response processors
+            this.responseProcessors = new Map([
+                ['get', new GetResponseProcessor()],
+                ['post', new PostResponseProcessor()],
+                ['options', new OptionsResponseProcessor()],
+            ]);
 
 
 
@@ -82,59 +97,96 @@
         /**
          * express middleware
          */
-        route(request, response) {
-            const action = request.method.toLowerCase();
+        route(httpRequest, httpResponse) {
             const requestId = this.createRandomId();
+            const action = httpRequest.method.toLowerCase();
 
 
-            if (this.processors.has(action)) {
+            this.processRequest({
+                httpRequest,
+                httpResponse,
+                requestId,
+                action,
+            }).catch((err) => {
+                if (err instanceof Error) {
+                    
+                    // log info, this should never happen
+                    log.warn(`Uncaught error for httpRequest ${requestId}`, {
+                        method: action,
+                        requestId: requestId,
+                        url: httpRequest.url,
+                        rawHeaders: httpRequest.rawHeaders,
+                    });
+                    
+                    log(err);
+                    
+                    // don't tell the client any details
+                    httpResponse.status(500).send({
+                        status: 500,
+                        code: 'server_error',
+                        description: `The server encountered an error while processing the httpRequest. Request-id: ${requestId}`
+                    });
+                } else if (type.object(err) && err.status && err.code) {
+
+                    // custom parser error
+                    httpResponse.status(err.status).send({
+                        status: err.status,
+                        code: err.code,
+                        description: err.description
+                    });
+                }
+            });
+        }
+
+
+
+
+
+
+        /**
+        * convert http to distributed and back again
+        * 
+        */
+        async processRequest({
+            httpRequest,
+            httpResponse,
+            requestId,
+            action,
+        }) {
+            if (this.requestProcessors.has(action) && this.responseProcessors.has(action)) {
 
                 // let specialized classes do the work
-                this.processors.get(action).processRequest({
-                    request, 
-                    response,
+                const distributedRequest = await this.requestProcessors.get(action).processRequest({
+                    httpRequest, 
+                    httpResponse,
                     requestId,
-                    action,
-                }).then((distributedRequest) => {
+                });
 
-                    
-                }).catch((err) => {
-                    if (err instanceof Error) {
-                        
-                        // log info, this should never happen
-                        log.warn(`Uncaught error for request ${requestId}`, {
-                            method: action,
-                            requestId: requestId,
-                            url: request.url,
-                            rawHeaders: request.rawHeaders,
-                        });
-                        
-                        log(err);
-                        
-                        // don't tell the client any details
-                        response.status(500).send({
-                            status: 500,
-                            code: 'server_error',
-                            description: `The server encountered an error while processing the request. Request-id: ${requestId}`
-                        });
-                    } else if (type.object(err) && err.status && err.code) {
+                // send the request
+                const distributedResponse = await distributedRequest.send(this);
 
-                        // custom parser error
-                        response.status(err.status).send({
-                            status: err.status,
-                            code: err.code,
-                            description: err.description
-                        });
-                    }
+                // send the response
+                await this.responseProcessors.get(action).processResponse({
+                    httpRequest, 
+                    httpResponse,
+                    distributedRequest,
+                    distributedResponse,
                 });
             } else {
-                response.status(405).send({
+                httpResponse.status(405).send({
                     status: 405,
                     code: 'method_not_allowed',
                     description: `The ${action} is not supported by this server`
                 });
             }
         }
+
+
+
+
+
+
+
 
 
 

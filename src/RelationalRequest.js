@@ -20,7 +20,7 @@
                 if (options.resourceId)                         this.setResourceId(options.resourceId);
                 if (options.remoteService)                      this.setRemoteService(options.remoteService);
                 if (options.remoteResource)                     this.setRemoteResource(options.remoteResource);
-                if (!type.undefined(options.remoteResourceId))  this.setRemoteResourceId(options.remoteResourceId);
+                if (!type.undefined(options.remoteResourceId) && !type.null(options.remoteResourceId))  this.setRemoteResourceId(options.remoteResourceId);
                 if (options.filter)                             this.setFilter(options.filter);
                 if (options.selection)                          this.addSelection(options.selection);
                 if (type.number(options.offset))                this.setOffset(options.offset);

@@ -719,8 +719,10 @@
 
 
             // set permissions on local entity
-            for (const action of this.actionRegistry) {
-                data.permissions[action] = permissions.isActionAllowed(this.getServiceName(), this.getName(), action, true);
+            if (permissions) {
+                for (const action of this.actionRegistry) {
+                    data.permissions[action] = permissions.isActionAllowed(this.getServiceName(), this.getName(), action, true);
+                }
             }
 
 
@@ -746,10 +748,10 @@
                                 , property  : relation.remote.property
                             };
 
-                            definition.actions = null;
-                            definition.permissions = null;
+                            definition.actions = {};
+                            definition.permissions = {};
 
-
+                            
                             return new RelationalRequest({
                                   service   : definition.remote.service
                                 , resource  : definition.remote.resource
@@ -761,9 +763,11 @@
                                     if (remoteResponse.data.permissions)  definition.permissions = remoteResponse.data.permissions;
                                     if (remoteResponse.data.actions)      definition.actions = remoteResponse.data.actions;
 
-                                    definition.permissions.createLink = true;
-                                    definition.permissions.updateLink = true;
-                                    definition.permissions.deleteLink = true;
+                                    if (permissions) {
+                                        definition.permissions.createLink = true;
+                                        definition.permissions.updateLink = true;
+                                        definition.permissions.deleteLink = true;
+                                    }
                                 } else if (debugDistributed) {
                                     log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
                                 }
@@ -777,6 +781,9 @@
                                 , property  : relation.remote.property
                             };
 
+                            definition.actions = {};
+                            definition.permissions = {};
+
 
                             return new RelationalRequest({
                                   service   : definition.remote.service
@@ -789,9 +796,11 @@
                                     if (remoteResponse.data.permissions)  definition.permissions = remoteResponse.data.permissions;
                                     if (remoteResponse.data.actions)      definition.actions = remoteResponse.data.actions;
 
-                                    definition.permissions.createLink = definition.permissions.create || definition.permissions.createOne || false;
-                                    definition.permissions.updateLink = definition.permissions.update || definition.permissions.updateOne || false;
-                                    definition.permissions.deleteLink = definition.permissions.delete || definition.permissions.deleteOne || false;
+                                    if (permissions) {
+                                        definition.permissions.createLink = definition.permissions.create || definition.permissions.createOne || false;
+                                        definition.permissions.updateLink = definition.permissions.update || definition.permissions.updateOne || false;
+                                        definition.permissions.deleteLink = definition.permissions.delete || definition.permissions.deleteOne || false;
+                                    }
                                 } else if (debugDistributed) {
                                     log.highlight(`Failed to get permissions for the resource ${definition.remote.resource}/${definition.remote.service}: ${remoteResponse.toError()}`);
                                 }
@@ -813,6 +822,14 @@
                                 , remoteProperty    : relation.via.remoteProperty
                             };
 
+                            definition.actions = {};
+                            definition.permissions = {};
+
+                            definition.via.actions = {};
+                            definition.via.permissions = {};
+
+
+                            
                             return new RelationalRequest({
                                   service   : definition.remote.service
                                 , resource  : definition.remote.resource
@@ -836,9 +853,11 @@
                                             const has = p => !!viaResponse.data.permissions[p];
                                             const can = a => viaResponse.data.actions.includes(a);
 
-                                            definition.permissions.createLink = (can('create') && has('create')) || (can('createOne') && has('createOne'));
-                                            definition.permissions.updateLink = (can('update') && has('update')) || (can('updateOne') && has('updateOne'));
-                                            definition.permissions.deleteLink = (can('delete') && has('delete')) || (can('deleteOne') && has('deleteOne'));
+                                            if (permissions) {
+                                                definition.permissions.createLink = (can('create') && has('create')) || (can('createOne') && has('createOne'));
+                                                definition.permissions.updateLink = (can('update') && has('update')) || (can('updateOne') && has('updateOne'));
+                                                definition.permissions.deleteLink = (can('delete') && has('delete')) || (can('deleteOne') && has('deleteOne'));
+                                            }
                                         } else if (debugDistributed) {
                                             log.highlight(`Failed to get permissions for the resource ${definition.via.resource}/${definition.via.service}: ${viaResponse.toError()}`);
                                         }

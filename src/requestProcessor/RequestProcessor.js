@@ -113,6 +113,21 @@
 
 
 
+        /**
+        * define the action that the request has 
+        */
+        getActionName(urlParts, prefix) {
+            if (urlParts.remoteResourceId !== null && urlParts.remoteResourceId !== undefined) return `${prefix}OneRelation`;
+            else if (urlParts.remoteResource) return `${prefix}Relation`;
+            else if (urlParts.resourceId !== null && urlParts.remoteResource !== undefined) return `${prefix}One`;
+            else return `${prefix}`;
+        }
+
+
+
+
+
+
 
 
         /**

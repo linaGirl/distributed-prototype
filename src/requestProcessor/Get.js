@@ -57,16 +57,16 @@
         * an incoming GET request
         */
         async processRequest({
-            request, 
-            response,
-            action,
+            httpRequest, 
+            httpResponse,
+            requestId,
         }) {
             
             // get the basic request configuration
-            const urlParts = await this.parseURL(request);
+            const urlParts = await this.parseURL(httpRequest);
 
             // get the parsed headers
-            const headers = await this.parseHeaders(request);
+            const headers = await this.parseHeaders(httpRequest);
 
 
             // it's time to create the selection
@@ -79,25 +79,21 @@
             
             const distributedRequest = new RelationalRequest({
                 relationalSelection: selection,
-                selection: Array.from(headers.get('select').properties.values()),
+                selection: headers.has('select') ? Array.from(headers.get('select').properties.values()) : ['*'],
                 service: urlParts.service,
                 resource: urlParts.resource,
                 resourceId: urlParts.resourceId,
                 remoteService: urlParts.remoteService,
                 remoteResource: urlParts.remoteResource,
                 remoteResourceId: urlParts.remoteResourceId,
-                filter: headers.get('filter'),
-                tokens: headers.get('authorization').map(token => token.token),
-                action: action,
+                filter: headers.has('filter') ? headers.get('filter') : null,
+                tokens: headers.has('authorization') ? headers.get('authorization').map(token => token.token) : [],
+                action: this.getActionName(urlParts, 'list'),
             });
 
 
             return distributedRequest;
         }
-
-
-
-        
 
 
 
@@ -114,20 +110,17 @@
             selectionTree,
             serviceName,
         }) {
-            for (const [name, child] of selectionTree.children.entries()) {
-                const childSelection = selection.select(serviceName, child.name, Array.from(child.properties.values()));
+            if (selectionTree) {
+                for (const [name, child] of selectionTree.children.entries()) {
+                    const childSelection = selection.select(serviceName, child.name, Array.from(child.properties.values()));
 
-                this.buildSelection({
-                    selection: childSelection,
-                    selectionTree: child,
-                    serviceName: serviceName
-                });
+                    this.buildSelection({
+                        selection: childSelection,
+                        selectionTree: child,
+                        serviceName: serviceName
+                    });
+                }
             }
         }
-
-
-
-
-
     }
 }

@@ -21,6 +21,7 @@
                 if (options.token)              this.setToken(options.token);
                 if (options.options)            this.setOptions(options.options);
                 if (options.origin)             this.setOrigin(options.origin);
+                if (options.requestId)          this.setRequestId(options.requestId);
                 if (options.responseFormats)    this.setResponseFormats(options.responseFormats);
             }
         }
@@ -44,6 +45,27 @@
 
         hasOrigin() {
             return !!this.originRequest;
+        }
+
+
+
+
+
+
+
+        /**
+        * the unique request id for request tracing
+        */
+        setRequestId(requestId) {
+            this.requestId = requestId;
+        }
+
+        getRequestId() {
+            return this.requestId || null;
+        }
+
+        hasRequestId() {
+            return !!this.requestId;
         }
 
 
