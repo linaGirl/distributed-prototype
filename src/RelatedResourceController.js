@@ -238,10 +238,15 @@
                                 // apply update to all records
                                 records.forEach((record) => {
 
-                                    // empty inegers that are delivered as empty strings must be set to null
+                                    // empty integers that are delivered as empty strings must be set to null
                                     if (request.data && typeof request.data === 'object' && request.data !== null) {
                                         for (const property of this.definition.properties.values()) {
-                                            if (request.data[property.name] === '' && property.representation === 'number') request.data[property.name] = null;
+                                            if (request.data[property.name] === '' && (
+                                                property.representation === 'number' ||
+                                                property.type === 'interval'
+                                            )) {
+                                                request.data[property.name] = null;
+                                            }
                                         }
                                     }
 
