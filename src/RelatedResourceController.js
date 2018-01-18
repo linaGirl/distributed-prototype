@@ -30,6 +30,7 @@
     comparators.set('equal', 'equal');
     comparators.set('not', 'not');
     comparators.set('is', 'is');
+    comparators.set('jsonValue', 'jsonValue');
 
 
 
