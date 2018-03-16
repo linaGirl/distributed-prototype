@@ -455,6 +455,7 @@
                 , resource: request.resource
                 , resourceId: request.resourceId
                 , action: 'listOne'
+                , tokens: request.getTokens()
             }).send(this).then((listResponse) => {
                 if (listResponse.status === 'notFound') request.setAction('createOne');
                 else request.setAction('updateOne');
@@ -481,6 +482,7 @@
                 , resource: request.resource
                 , filter: request.filter
                 , action: 'list'
+                , tokens: request.getTokens()
             }).send(this).then((listResponse) => {
                 if (listResponse.status === 'notFound' || !Array.isArray(listResponse.data) || !listResponse.data.length) request.setAction('createOne');
                 else request.setAction('update');

@@ -1,7 +1,7 @@
 {
     "name": "distributed-prototype",
     "description": "Prototoype implementation for the distributed framework",
-    "version": "2.29.0",
+    "version": "2.29.1",
     "homepage": "https://github.com/eventEmitter/distributed-prototype",
     "author": "Michael van der Weg <michael@vanderweg.com> (http://vanderweg.com/)",
     "repository": {
@@ -20,9 +20,9 @@
         "ee-log": "^3.0.5",
         "ee-soa-rpc-request": "^0.2.26",
         "ee-types": "^2.1.4",
-        "express": "^4.16.2",
+        "express": "^4.16.3",
         "inquirer": "^1.2.3",
-        "leaky-bucket": "^2.1.1"
+        "leaky-bucket": "^2.1.2"
     },
     "devDependencies": {
         "mocha": "3.x"
