@@ -61,6 +61,15 @@
 
 
 
+        /**
+        * is called as soon the application is on-line
+        * and additional services may start listening
+        * with their own servers
+        */
+        applicationIsOnline() {
+            
+        }
+
 
 
         /**
